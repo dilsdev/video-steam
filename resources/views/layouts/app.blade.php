@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Video Platform') - {{ config('app.name') }}</title>
-    <script id="aclib" type="text/javascript" src="//acscdn.com/script/aclib.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -460,6 +459,7 @@
             background: rgba(99, 102, 241, 0.1);
         }
     </style>
+    <script id="aclib" type="text/javascript" src="//acscdn.com/script/aclib.js"></script>
     @stack('styles')
 </head>
 <body>
@@ -532,11 +532,12 @@
         window.csrfToken = '{{ csrf_token() }}';
     </script>
     @stack('scripts')
-    <script type="text/javascript">
+<script type="text/javascript">
     aclib.runAutoTag({
-        zoneId: 'znrgbj5gks',
+        zoneId: 'r25zzvyg4m',
     });
 </script>
+
 
 </body>
 </html>
