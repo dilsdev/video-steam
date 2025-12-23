@@ -459,7 +459,6 @@
             background: rgba(99, 102, 241, 0.1);
         }
     </style>
-    <script id="aclib" type="text/javascript" src="//acscdn.com/script/aclib.js"></script>
     @stack('styles')
 </head>
 <body>
@@ -532,10 +531,6 @@
         window.csrfToken = '{{ csrf_token() }}';
     </script>
     @stack('scripts')
-<script type="text/javascript">
-    aclib.runAutoTag({
-        zoneId: 'o1bir8ndhl',
-    });
 </script>
 
 

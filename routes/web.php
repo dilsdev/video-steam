@@ -36,11 +36,11 @@ Route::middleware(['throttle:100,1'])->group(function () {
     Route::post('/stream/{token}/ad-watched', [StreamController::class, 'confirmAdWatched'])->name('stream.ad-watched');
 });
 
+// Public video token (untuk guest & authenticated users)
+Route::post('/videos/{video}/token', [VideoController::class, 'generateToken'])->name('videos.token');
+
 // Authenticated routes
 Route::middleware(['auth'])->group(function () {
-    // Video token generation
-    Route::post('/videos/{video}/token', [VideoController::class, 'generateToken'])->name('videos.token');
-
     // Membership
     Route::get('/memberships', [MembershipController::class, 'index'])->name('memberships.index');
     Route::post('/memberships', [MembershipController::class, 'store'])->name('memberships.store');
