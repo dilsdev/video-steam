@@ -11,24 +11,23 @@ class VerifyLynkSignature
     /**
      * Handle an incoming request.
      * Validates the X-Lynk-Signature header against the configured token.
+     * If token is not configured, allow all requests (for development).
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $signature = $request->header('X-Lynk-Signature');
         $expectedToken = config('services.lynk.webhook_token');
 
-        if (empty($expectedToken)) {
-            // Log error: token not configured
-            return response()->json([
-                'success' => false,
-                'message' => 'Webhook token not configured'
-            ], 500);
+        // Skip verification if token not configured (development mode)
+        if (empty($expectedToken) || $expectedToken === 'your-lynk-signature-token') {
+            return $next($request);
         }
+
+        $signature = $request->header('X-Lynk-Signature');
 
         if ($signature !== $expectedToken) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid signature'
+                'message' => 'Invalid signature',
             ], 401);
         }
 
