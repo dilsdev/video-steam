@@ -20,12 +20,16 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [VideoController::class, 'index'])->name('home');
 Route::get('/v/{video:slug}', [VideoController::class, 'show'])->name('videos.show');
 
-// Auth routes
+// Auth routes (with rate limiting to prevent brute force/automation)
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
-    Route::post('/login', [AuthController::class, 'login']);
     Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
-    Route::post('/register', [AuthController::class, 'register']);
+    
+    // Rate limit: 5 attempts per minute per IP for login/register
+    Route::middleware(['throttle:10,1'])->group(function () {
+        Route::post('/login', [AuthController::class, 'login']);
+        Route::post('/register', [AuthController::class, 'register']);
+    });
 });
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
@@ -39,13 +43,8 @@ Route::middleware(['throttle:100,1'])->group(function () {
 // Public video token (untuk guest & authenticated users)
 Route::post('/videos/{video}/token', [VideoController::class, 'generateToken'])->name('videos.token');
 
-// Authenticated routes
-Route::middleware(['auth'])->group(function () {
-    // Membership
-    Route::get('/memberships', [MembershipController::class, 'index'])->name('memberships.index');
-    Route::post('/memberships', [MembershipController::class, 'store'])->name('memberships.store');
-    Route::post('/memberships/validate-voucher', [MembershipController::class, 'validateVoucher'])->name('memberships.validate-voucher');
-});
+// Membership - public view so guests can see pricing
+Route::get('/memberships', [MembershipController::class, 'index'])->name('memberships.index');
 
 // Uploader routes
 Route::middleware(['auth', \App\Http\Middleware\CheckUploader::class])

@@ -477,8 +477,8 @@ RateLimiter::for('api', function ($request) {
  * MAIL_PORT=587
  *
  * # Membership pricing (dalam rupiah)
- * MEMBERSHIP_MONTHLY_PRICE=50000
- * MEMBERSHIP_YEARLY_PRICE=500000
+ * MEMBERSHIP_MONTHLY_PRICE=20000
+ * MEMBERSHIP_YEARLY_PRICE=199000
  *
  * # Payout settings
  * MIN_PAYOUT=100000

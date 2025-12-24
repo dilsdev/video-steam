@@ -82,6 +82,12 @@
                         </tbody>
                     </table>
                 </div>
+
+                @if ($videos->hasPages())
+                    <div class="pagination" style="margin-top: 1rem;">
+                        {{ $videos->links() }}
+                    </div>
+                @endif
             @else
                 <div class="card" style="text-align: center; padding: 3rem;">
                     <p style="color: #94a3b8; margin-bottom: 1rem;">Belum ada video yang diupload.</p>

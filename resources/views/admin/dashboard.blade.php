@@ -6,7 +6,7 @@
     <h1 style="margin-bottom: 2rem;">Admin Dashboard</h1>
 
     <!-- Stats Cards -->
-    <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr);">
+    <div class="stats-grid admin-stats-grid" style="grid-template-columns: repeat(4, 1fr);">
         <div class="stat-card">
             <h3>Total Users</h3>
             <p class="stat-value">{{ number_format($stats['total_users']) }}</p>
@@ -42,7 +42,7 @@
         </div>
     </div>
 
-    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; margin-top: 2rem;">
+    <div class="admin-content-grid" style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; margin-top: 2rem;">
         <!-- Pending Payouts -->
         <div class="section">
             <div class="section-header">
@@ -109,4 +109,32 @@
             </div>
         </div>
     </div>
+
+    @push('styles')
+        <style>
+            @media (max-width: 1024px) {
+                .admin-content-grid {
+                    grid-template-columns: 1fr !important;
+                }
+            }
+
+            @media (max-width: 768px) {
+                .admin-stats-grid {
+                    grid-template-columns: repeat(2, 1fr) !important;
+                }
+            }
+
+            @media (max-width: 480px) {
+                .admin-stats-grid {
+                    grid-template-columns: 1fr !important;
+                }
+
+                .table-container th,
+                .table-container td {
+                    padding: 0.75rem 0.5rem;
+                    font-size: 0.875rem;
+                }
+            }
+        </style>
+    @endpush
 @endsection

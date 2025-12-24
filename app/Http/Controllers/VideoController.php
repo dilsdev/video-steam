@@ -47,6 +47,7 @@ class VideoController extends Controller
             'description' => 'nullable|string|max:5000',
             'video' => 'required|file|mimes:mp4,mov,avi,webm,mkv|max:512000',
             'thumbnail' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'auto_thumbnail' => 'nullable|string', // Base64 data URL from JavaScript
             'is_public' => 'boolean',
         ]);
 
@@ -70,16 +71,74 @@ class VideoController extends Controller
             'status' => 'ready',
         ]);
 
-        // Handle thumbnail
+        // Handle thumbnail - prioritas: manual upload > auto-generated > default
         if ($request->hasFile('thumbnail')) {
+            // Manual file upload - gunakan path langsung untuk konsistensi
             $thumbFile = $request->file('thumbnail');
             $thumbName = $video->slug.'.'.$thumbFile->getClientOriginalExtension();
-            $thumbFile->storeAs('public/thumbnails', $thumbName);
+            
+            // Ensure thumbnails directory exists
+            $thumbnailDir = storage_path('app/public/thumbnails');
+            if (!is_dir($thumbnailDir)) {
+                mkdir($thumbnailDir, 0755, true);
+            }
+            
+            // Move file ke lokasi thumbnails
+            $thumbFile->move($thumbnailDir, $thumbName);
             $video->update(['thumbnail' => $thumbName]);
+            
+            \Log::info("Manual thumbnail saved: {$thumbName}");
+        } elseif ($request->filled('auto_thumbnail')) {
+            // Auto-generated thumbnail from JavaScript (base64)
+            $this->saveBase64Thumbnail($video, $request->auto_thumbnail);
         }
+        // Jika tidak ada thumbnail, getThumbnailUrl() akan return default-thumbnail.svg
 
         return redirect()->route('videos.show', $video)
             ->with('success', 'Video berhasil diupload!');
+    }
+
+    /**
+     * Save base64 thumbnail from JavaScript Canvas
+     */
+    private function saveBase64Thumbnail(Video $video, string $base64Data): bool
+    {
+        try {
+            // Remove data URL prefix (data:image/jpeg;base64,)
+            if (preg_match('/^data:image\/(\w+);base64,/', $base64Data, $matches)) {
+                $extension = $matches[1] === 'jpeg' ? 'jpg' : $matches[1];
+                $base64Data = substr($base64Data, strpos($base64Data, ',') + 1);
+            } else {
+                $extension = 'jpg';
+            }
+
+            // Decode base64
+            $imageData = base64_decode($base64Data);
+            
+            if ($imageData === false) {
+                return false;
+            }
+
+            // Ensure thumbnails directory exists
+            $thumbnailDir = storage_path('app/public/thumbnails');
+            if (!is_dir($thumbnailDir)) {
+                mkdir($thumbnailDir, 0755, true);
+            }
+
+            // Save file
+            $thumbName = $video->slug . '.' . $extension;
+            $thumbnailPath = $thumbnailDir . '/' . $thumbName;
+            
+            if (file_put_contents($thumbnailPath, $imageData)) {
+                $video->update(['thumbnail' => $thumbName]);
+                return true;
+            }
+
+            return false;
+        } catch (\Exception $e) {
+            \Log::error("Error saving base64 thumbnail: " . $e->getMessage());
+            return false;
+        }
     }
 
     /**
@@ -172,12 +231,23 @@ class VideoController extends Controller
         if ($request->hasFile('thumbnail')) {
             // Delete old thumbnail
             if ($video->thumbnail) {
-                Storage::delete('public/thumbnails/'.$video->thumbnail);
+                $oldPath = storage_path('app/public/thumbnails/' . $video->thumbnail);
+                if (file_exists($oldPath)) {
+                    unlink($oldPath);
+                }
             }
 
             $thumbFile = $request->file('thumbnail');
             $thumbName = $video->slug.'.'.$thumbFile->getClientOriginalExtension();
-            $thumbFile->storeAs('public/thumbnails', $thumbName);
+            
+            // Ensure thumbnails directory exists
+            $thumbnailDir = storage_path('app/public/thumbnails');
+            if (!is_dir($thumbnailDir)) {
+                mkdir($thumbnailDir, 0755, true);
+            }
+            
+            // Move file ke lokasi thumbnails
+            $thumbFile->move($thumbnailDir, $thumbName);
             $video->update(['thumbnail' => $thumbName]);
         }
 

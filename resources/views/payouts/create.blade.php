@@ -6,9 +6,9 @@
     <div style="max-width: 600px; margin: 0 auto;">
         <h1 style="margin-bottom: 2rem;">Tarik Dana</h1>
 
-        <div class="card"
+        <div class="card balance-card"
             style="margin-bottom: 2rem; background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(14,165,233,0.1));">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
                 <div>
                     <p style="color: #94a3b8; margin-bottom: 0.25rem;">Saldo Tersedia</p>
                     <p style="font-size: 2rem; font-weight: 700;">Rp {{ number_format($balance) }}</p>
@@ -89,5 +89,25 @@
                 document.getElementById('net-amount').textContent = net.toLocaleString('id-ID');
             });
         </script>
+    @endpush
+
+    @push('styles')
+        <style>
+            @media (max-width: 640px) {
+                .balance-card {
+                    flex-direction: column !important;
+                    gap: 1rem;
+                    text-align: center !important;
+                }
+
+                .balance-card>div {
+                    text-align: center !important;
+                }
+
+                .balance-card .balance-value {
+                    font-size: 1.75rem !important;
+                }
+            }
+        </style>
     @endpush
 @endsection

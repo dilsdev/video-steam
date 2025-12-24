@@ -12,7 +12,7 @@
     {{-- Adcash Library - Must be in head as high as possible --}}
     <script id="aclib" type="text/javascript" src="//acscdn.com/script/aclib.js"></script>
     <style>
-        :root {
+        /* :root {
             --primary: #6366f1;
             --primary-dark: #4f46e5;
             --secondary: #0ea5e9;
@@ -23,7 +23,7 @@
             --light: #f8fafc;
             --gray: #64748b;
             --border: #e2e8f0;
-        }
+        } */
 
         * {
             margin: 0;
@@ -255,6 +255,30 @@
             }
         }
 
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+                padding: 1rem;
+            }
+
+            .nav {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 0.75rem;
+            }
+
+            .nav a {
+                padding: 0.4rem 0.75rem;
+                font-size: 0.875rem;
+            }
+
+            .btn.btn-sm {
+                padding: 0.4rem 0.75rem;
+                font-size: 0.8rem;
+            }
+        }
+
         @media (max-width: 640px) {
 
             .grid-4,
@@ -270,7 +294,20 @@
             .main {
                 padding: 1rem;
             }
+
+            .logo {
+                font-size: 1.25rem;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            h2 {
+                font-size: 1.125rem;
+            }
         }
+
 
         /* Video Card */
         .video-card {
@@ -488,7 +525,7 @@
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
         }
 
-        .user-menu:hover .user-menu-dropdown {
+        .user-menu.active .user-menu-dropdown {
             display: block;
         }
 
@@ -576,9 +613,28 @@
     <script>
         // CSRF Token for AJAX
         window.csrfToken = '{{ csrf_token() }}';
+
+        // User menu dropdown toggle
+        document.addEventListener('DOMContentLoaded', function() {
+            const userMenu = document.querySelector('.user-menu');
+            const userMenuToggle = document.querySelector('.user-menu-toggle');
+
+            if (userMenuToggle && userMenu) {
+                userMenuToggle.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    userMenu.classList.toggle('active');
+                });
+
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!userMenu.contains(e.target)) {
+                        userMenu.classList.remove('active');
+                    }
+                });
+            }
+        });
     </script>
     @stack('scripts')
-    </script>
 
 
 </body>

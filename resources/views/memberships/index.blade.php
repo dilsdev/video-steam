@@ -7,16 +7,20 @@
         <h1 style="margin-bottom: 0.5rem;">Pilih Paket Membership</h1>
         <p style="color: #94a3b8; margin-bottom: 2rem;">Nikmati menonton video tanpa iklan!</p>
 
-        @if ($currentMembership)
-            <div class="card"
-                style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05)); margin-bottom: 2rem; display: inline-block; padding: 1rem 2rem;">
-                <span class="badge badge-success" style="font-size: 0.875rem;">Membership Aktif</span>
-                <p style="margin-top: 0.5rem;">Berlaku hingga:
-                    <strong>{{ $currentMembership->expires_at->format('d M Y') }}</strong></p>
-            </div>
-        @endif
+        @auth
+            @if ($currentMembership)
+                <div class="card"
+                    style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05)); margin-bottom: 2rem; display: inline-block; padding: 1rem 2rem;">
+                    <span class="badge badge-success" style="font-size: 0.875rem;">Membership Aktif</span>
+                    <p style="margin-top: 0.5rem;">Berlaku hingga:
+                        <strong>{{ $currentMembership->expires_at->format('d M Y') }}</strong>
+                    </p>
+                </div>
+            @endif
+        @endauth
 
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 2rem; margin-top: 2rem;">
+        <div class="membership-grid"
+            style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 2rem; margin-top: 2rem;">
             @foreach ($plans as $key => $plan)
                 <div class="card" style="position: relative; {{ $key === 'yearly' ? 'border: 2px solid #6366f1;' : '' }}">
                     @if ($key === 'yearly')
@@ -37,70 +41,85 @@
                         <li style="padding: 0.5rem 0; color: #10b981;">✓ Support kreator favorit</li>
                     </ul>
 
-                    <form action="{{ route('memberships.store') }}" method="POST">
-                        @csrf
-                        <input type="hidden" name="plan" value="{{ $key }}">
+                    @auth
+                        {{-- User sudah login - redirect ke payment --}}
+                        @php
+                            $paymentUrl = $plan['payment_url'] ?? config('services.lynk.payment_url_' . $key);
+                        @endphp
 
-                        <div style="margin-bottom: 1rem;">
-                            <div style="display: flex; gap: 0.5rem;">
-                                <input type="text" name="voucher_code" placeholder="Kode voucher (opsional)"
-                                    class="voucher-input" data-plan="{{ $key }}"
-                                    style="flex: 1; padding: 0.75rem; background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white;">
-                                <button type="button" class="btn btn-secondary btn-sm check-voucher">Cek</button>
-                            </div>
-                            <div class="voucher-result" style="display: none; margin-top: 0.5rem; font-size: 0.875rem;">
-                            </div>
-                        </div>
-
-                        <button type="submit" class="btn {{ $key === 'yearly' ? 'btn-primary' : 'btn-secondary' }}"
-                            style="width: 100%;">
+                        <a href="{{ $paymentUrl }}" target="_blank" rel="noopener noreferrer"
+                            class="btn {{ $key === 'yearly' ? 'btn-primary' : 'btn-secondary' }}"
+                            style="width: 100%; display: block; text-decoration: none;">
                             Berlangganan
-                        </button>
-                    </form>
+                        </a>
+                    @else
+                        {{-- User belum login - tampilkan opsi daftar/login --}}
+                        @php
+                            $redirectUrl = urlencode(route('memberships.index'));
+                        @endphp
+                        <a href="{{ route('register') }}?redirect={{ $redirectUrl }}"
+                            class="btn {{ $key === 'yearly' ? 'btn-primary' : 'btn-secondary' }}"
+                            style="width: 100%; display: block; text-decoration: none; margin-bottom: 0.5rem;">
+                            Daftar & Berlangganan
+                        </a>
+                        <a href="{{ route('login') }}?redirect={{ $redirectUrl }}" class="btn btn-outline"
+                            style="width: 100%; display: block; text-decoration: none; background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #94a3b8;">
+                            Sudah Punya Akun? Login
+                        </a>
+                    @endauth
                 </div>
             @endforeach
         </div>
+
+        @auth
+            <div class="card"
+                style="margin-top: 2rem; padding: 1.5rem; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2);">
+                <p style="color: #94a3b8; font-size: 0.875rem; margin-bottom: 0.5rem;">
+                    <strong style="color: #fff;">💡 Cara Berlangganan:</strong>
+                </p>
+                <ol style="color: #94a3b8; font-size: 0.875rem; text-align: left; padding-left: 1.5rem; margin: 0;">
+                    <li>Klik tombol "Berlangganan" pada paket yang diinginkan</li>
+                    <li>Selesaikan pembayaran di halaman yang terbuka</li>
+                    <li>Gunakan email yang sama dengan akun Anda: <strong
+                            style="color: #10b981;">{{ auth()->user()->email }}</strong></li>
+                    <li>Membership akan otomatis aktif setelah pembayaran berhasil</li>
+                </ol>
+            </div>
+        @else
+            <div class="card"
+                style="margin-top: 2rem; padding: 1.5rem; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2);">
+                <p style="color: #94a3b8; font-size: 0.875rem;">
+                    <strong style="color: #fff;">💡 Cara Berlangganan:</strong>
+                </p>
+                <ol style="color: #94a3b8; font-size: 0.875rem; text-align: left; padding-left: 1.5rem; margin: 0;">
+                    <li>Daftar atau login terlebih dahulu</li>
+                    <li>Pilih paket membership yang diinginkan</li>
+                    <li>Selesaikan pembayaran</li>
+                    <li>Membership otomatis aktif!</li>
+                </ol>
+            </div>
+        @endauth
     </div>
 
-    @push('scripts')
-        <script>
-            document.querySelectorAll('.check-voucher').forEach(btn => {
-                btn.addEventListener('click', async function() {
-                    const card = this.closest('.card');
-                    const input = card.querySelector('.voucher-input');
-                    const result = card.querySelector('.voucher-result');
-                    const plan = input.dataset.plan;
+    @push('styles')
+        <style>
+            @media (max-width: 768px) {
+                .membership-grid {
+                    grid-template-columns: 1fr !important;
+                }
 
-                    if (!input.value.trim()) {
-                        result.style.display = 'block';
-                        result.innerHTML = '<span style="color: #ef4444;">Masukkan kode voucher</span>';
-                        return;
-                    }
+                .membership-card {
+                    padding: 1.25rem !important;
+                }
 
-                    const response = await fetch('{{ route('memberships.validate-voucher') }}', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': window.csrfToken
-                        },
-                        body: JSON.stringify({
-                            code: input.value,
-                            plan: plan
-                        })
-                    });
+                .membership-card h3 {
+                    font-size: 1.1rem !important;
+                }
 
-                    const data = await response.json();
-                    result.style.display = 'block';
-
-                    if (data.valid) {
-                        result.innerHTML =
-                            `<span style="color: #10b981;">Diskon: Rp ${data.discount.toLocaleString('id-ID')}<br>Total: Rp ${data.final_price.toLocaleString('id-ID')}</span>`;
-                    } else {
-                        result.innerHTML =
-                            `<span style="color: #ef4444;">${data.message || 'Voucher tidak valid'}</span>`;
-                    }
-                });
-            });
-        </script>
+                .membership-card .price {
+                    font-size: 2rem !important;
+                }
+            }
+        </style>
     @endpush
 @endsection

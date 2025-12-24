@@ -4,128 +4,109 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Models\Membership;
-use App\Models\Voucher;
-use App\Models\VoucherUsage;
-use App\Models\Setting;
 use Illuminate\Support\Facades\DB;
 
 class MembershipService
 {
-    private array $plans = [
-        'monthly' => ['price' => 50000, 'duration' => 30, 'label' => 'Bulanan'],
-        'yearly' => ['price' => 500000, 'duration' => 365, 'label' => 'Tahunan'],
-    ];
-
     public function getPlans(): array
     {
-        return $this->plans;
+        return [
+            'monthly' => [
+                'price' => 20000, 
+                'duration' => 30, 
+                'label' => 'Bulanan',
+                'payment_url' => config('services.lynk.payment_url_monthly', '#')
+            ],
+            'yearly' => [
+                'price' => 199000, 
+                'duration' => 365, 
+                'label' => 'Tahunan',
+                'payment_url' => config('services.lynk.payment_url_yearly', '#')
+            ],
+        ];
     }
 
     public function getPlanPrice(string $plan): int
     {
-        return $this->plans[$plan]['price'] ?? 0;
+        $plans = $this->getPlans();
+        return $plans[$plan]['price'] ?? 0;
     }
 
     public function getPlanDuration(string $plan): int
     {
-        return $this->plans[$plan]['duration'] ?? 0;
+        $plans = $this->getPlans();
+        return $plans[$plan]['duration'] ?? 0;
     }
 
     public function getPlanLabel(string $plan): string
     {
-        return $this->plans[$plan]['label'] ?? ucfirst($plan);
+        $plans = $this->getPlans();
+        return $plans[$plan]['label'] ?? ucfirst($plan);
     }
 
     /**
-     * Validasi voucher
+     * Activate membership from webhook payment
+     * Creates user if not exists, or extends existing membership
      */
-    public function validateVoucher(string $code, User $user, float $amount): ?array
+    public function activateMembershipFromWebhook(
+        string $email,
+        ?string $name,
+        ?string $phone,
+        int $months,
+        ?string $paymentReference
+    ): Membership
     {
-        $voucher = Voucher::where('code', $code)->first();
-        
-        if (!$voucher || !$voucher->canBeUsed()) {
-            return null;
-        }
-        
-        // Cek apakah user sudah pernah pakai voucher ini
-        $usedByUser = VoucherUsage::where('voucher_id', $voucher->id)
-            ->where('user_id', $user->id)
-            ->count();
-        
-        if ($usedByUser >= $voucher->max_uses_per_user) {
-            return null;
-        }
-        
-        // Cek minimum purchase
-        if ($amount < $voucher->min_purchase) {
-            return null;
-        }
-        
-        $discount = $voucher->calculateDiscount($amount);
-        
-        return [
-            'voucher' => $voucher,
-            'discount' => $discount,
-            'final_price' => max(0, $amount - $discount)
-        ];
-    }
-
-    /**
-     * Aktivasi membership
-     */
-    public function activateMembership(User $user, string $plan, ?string $voucherCode = null): Membership
-    {
-        $originalPrice = $this->getPlanPrice($plan);
-        $duration = $this->getPlanDuration($plan);
-        $discount = 0;
-        $voucher = null;
-        
-        if ($voucherCode) {
-            $voucherData = $this->validateVoucher($voucherCode, $user, $originalPrice);
-            if ($voucherData) {
-                $voucher = $voucherData['voucher'];
-                $discount = $voucherData['discount'];
-            }
-        }
-        
-        $finalPrice = $originalPrice - $discount;
-        
-        return DB::transaction(function() use ($user, $plan, $originalPrice, $discount, $finalPrice, $duration, $voucher) {
-            // Extend jika sudah member
-            $startsAt = $user->hasActiveMembership() 
-                ? $user->member_until 
-                : now();
+        return DB::transaction(function() use ($email, $name, $phone, $months, $paymentReference) {
+            // Find or create user by email
+            $user = User::where('email', $email)->first();
             
-            $expiresAt = $startsAt->copy()->addDays($duration);
+            if (!$user) {
+                $user = User::create([
+                    'name' => $name ?? explode('@', $email)[0],
+                    'email' => $email,
+                    'password' => bcrypt(str()->random(16)), // Random password
+                    'role' => 'viewer',
+                    'is_verified' => true, // Auto-verify since they paid
+                ]);
+            }
+
+            // Calculate duration in days (1 month = 30 days)
+            $durationDays = $months * 30;
+            
+            // Calculate price based on months
+            $plans = $this->getPlans();
+            $pricePerMonth = $plans['monthly']['price'];
+            $originalPrice = $pricePerMonth * $months;
+
+            // Determine start date - extend if already member, otherwise start now
+            $now = now();
+            if ($user->hasActiveMembership() && $user->member_until) {
+                $startsAt = $user->member_until;
+            } else {
+                $startsAt = $now;
+            }
+            
+            // Calculate expiry date
+            $expiresAt = $startsAt->copy()->addDays($durationDays);
             
             $membership = Membership::create([
                 'user_id' => $user->id,
-                'plan' => $plan,
+                'plan' => $months == 12 ? 'yearly' : ($months == 1 ? 'monthly' : 'custom'),
                 'original_price' => $originalPrice,
-                'discount' => $discount,
-                'final_price' => $finalPrice,
+                'discount' => 0,
+                'final_price' => $originalPrice,
+                'payment_method' => 'lynk',
+                'payment_reference' => $paymentReference,
                 'starts_at' => $startsAt,
                 'expires_at' => $expiresAt,
                 'status' => 'active'
             ]);
             
-            // Update user
+            // Update user membership status
             $user->update([
                 'is_member' => true,
                 'member_until' => $expiresAt
             ]);
-            
-            // Record voucher usage
-            if ($voucher) {
-                $voucher->increment('used_count');
-                VoucherUsage::create([
-                    'voucher_id' => $voucher->id,
-                    'user_id' => $user->id,
-                    'membership_id' => $membership->id,
-                    'discount_amount' => $discount,
-                    'used_at' => now()
-                ]);
-            }
             
             return $membership;
         });

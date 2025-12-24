@@ -14,7 +14,7 @@
 
                 <p style="font-size: 1.5rem; color: #e2e8f0; margin-bottom: 1rem; line-height: 1.5;">
                     <strong
-                        style="background: linear-gradient(135deg, #10b981, #0ea5e9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 2rem;">Rp50.000</strong>
+                        style="background: linear-gradient(135deg, #10b981, #0ea5e9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 2rem;">Rp20.000</strong>
                     <span style="color: #94a3b8;">/ 1 Bulan</span>
                 </p>
                 <p style="font-size: 1.25rem; color: #fff; margin-bottom: 1.5rem;">Nonton Semua Video Tanpa Iklan</p>
@@ -44,7 +44,7 @@
 
                 <p style="font-size: 1.25rem; color: #e2e8f0; margin-bottom: 1.5rem; line-height: 1.6;">
                     <strong
-                        style="background: linear-gradient(135deg, #10b981, #0ea5e9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 1.75rem;">Rp50.000</strong>
+                        style="background: linear-gradient(135deg, #10b981, #0ea5e9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 1.75rem;">Rp20.000</strong>
                     <span style="color: #94a3b8;">=</span>
                     <strong style="color: #fff;">1 Bulan Nonton Tanpa Iklan</strong>
                     <span style="color: #64748b;">di Situs ini</span>
@@ -93,7 +93,7 @@
                         <div>
                             <script type="text/javascript">
                                 aclib.runBanner({
-                                    zoneId: '10743066'
+                                    zoneId: '{{ config('adcash.banner_zone_id') }}'
                                 });
                             </script>
                         </div>
@@ -144,7 +144,7 @@
                     <div class="card"
                         style="background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(14,165,233,0.15)); text-align: center; margin-top: 1.5rem; border: 1px solid rgba(99,102,241,0.3);">
                         <div style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem;">😤 Capek Iklan?</div>
-                        <p style="margin-bottom: 1rem; color: #94a3b8;"><strong style="color: #10b981;">Rp50.000</strong> =
+                        <p style="margin-bottom: 1rem; color: #94a3b8;"><strong style="color: #10b981;">Rp20.000</strong> =
                             1 Bulan Nonton Tanpa Iklan</p>
                         <a href="{{ route('memberships.index') }}" class="btn btn-primary">Daftar Sekarang</a>
                     </div>
@@ -157,7 +157,7 @@
                     <div>
                         <script type="text/javascript">
                             aclib.runBanner({
-                                zoneId: '10743082'
+                                zoneId: '{{ config('adcash.sidebar_zone_id') }}'
                             });
                         </script>
                     </div>
@@ -287,7 +287,7 @@
                 var zoneNativeSett = {
                     container: "awn",
                     baseUrl: "onclickalgo.com/script/native.php",
-                    r: [10743074]
+                    r: [{{ config('adcash.native_zone_id') }}]
                 };
                 var urls = {
                     cdnUrls: ["//superonclick.com", "//geniusonclick.com"],
@@ -443,27 +443,35 @@
 
         {{-- Adcash Ads --}}
         @if (!$skipAds)
-            <script type="text/javascript">
-                aclib.runInPagePush({
-                    zoneId: '10743058',
-                    maxAds: 2
-                });
-            </script>
-            <script type="text/javascript">
-                aclib.runInterstitial({
-                    zoneId: '10743050'
-                });
-            </script>
-            <script type="text/javascript">
-                aclib.runVideoSlider({
-                    zoneId: '10743038'
-                });
-            </script>
-            <script type="text/javascript">
-                aclib.runAutoTag({
-                    zoneId: 'o1bir8ndhl'
-                });
-            </script>
+            @php
+                $adMode = config('adcash.mode', 'both');
+                $showManualAds = in_array($adMode, ['manual', 'both']);
+                $showAutoTag = in_array($adMode, ['auto', 'both']);
+            @endphp
+
+            {{-- Manual Ads: InPagePush, VideoSlider --}}
+            @if ($showManualAds)
+                <script type="text/javascript">
+                    aclib.runInPagePush({
+                        zoneId: '{{ config('adcash.inpage_push_zone_id') }}',
+                        maxAds: 2
+                    });
+                </script>
+                <script type="text/javascript">
+                    aclib.runVideoSlider({
+                        zoneId: '{{ config('adcash.video_slider_zone_id') }}'
+                    });
+                </script>
+            @endif
+
+            {{-- AutoTag: Automatic ad placement --}}
+            @if ($showAutoTag)
+                <script type="text/javascript">
+                    aclib.runAutoTag({
+                        zoneId: '{{ config('adcash.autotag_zone_id') }}'
+                    });
+                </script>
+            @endif
         @endif
 
         <script>
@@ -484,7 +492,7 @@
                     // Show Modal 2 after 15 seconds
                     setTimeout(function() {
                         if (promoModal2) promoModal2.style.display = 'flex';
-                    }, 50000);
+                    }, 20000);
 
                     // Close button handlers
                     document.querySelectorAll('.close-modal').forEach(function(btn) {

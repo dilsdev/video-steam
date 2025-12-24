@@ -6,7 +6,7 @@
     <div class="hero" style="text-align: center; padding: 3rem 0; margin-bottom: 2rem;">
         <h1
             style="font-size: 2.5rem; margin-bottom: 1rem; background: linear-gradient(135deg, #6366f1, #0ea5e9); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-            Tonton Video, Dapatkan Penghasilan
+            Upload Video, Dapatkan Penghasilan
         </h1>
         <p style="color: #94a3b8; font-size: 1.125rem; max-width: 600px; margin: 0 auto;">
             Platform video dengan monetisasi untuk kreator. Upload video dan dapatkan penghasilan dari setiap penayangan.

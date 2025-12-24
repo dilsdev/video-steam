@@ -35,4 +35,25 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Lynk Payment Gateway
+    |--------------------------------------------------------------------------
+    */
+    'lynk' => [
+        'webhook_token' => env('LYNK_WEBHOOK_TOKEN'),
+        'payment_url_monthly' => env('LYNK_PAYMENT_URL_MONTHLY', '#'),
+        'payment_url_yearly' => env('LYNK_PAYMENT_URL_YEARLY', '#'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Cloudflare Turnstile (CAPTCHA)
+    |--------------------------------------------------------------------------
+    */
+    'turnstile' => [
+        'site_key' => env('TURNSTILE_SITE_KEY'),
+        'secret_key' => env('TURNSTILE_SECRET_KEY'),
+    ],
+
 ];

@@ -9,7 +9,7 @@
 
         <h1 style="margin-bottom: 2rem;">Payout #{{ $payout->id }}</h1>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+        <div class="payout-detail-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
             <!-- Payout Info -->
             <div class="card">
                 <h3 style="margin-bottom: 1rem;">Detail Payout</h3>
@@ -123,4 +123,22 @@
             </div>
         @endif
     </div>
+
+    @push('styles')
+        <style>
+            @media (max-width: 768px) {
+                .payout-detail-grid {
+                    grid-template-columns: 1fr !important;
+                }
+
+                .card {
+                    padding: 1rem;
+                }
+
+                .card table td {
+                    font-size: 0.875rem;
+                }
+            }
+        </style>
+    @endpush
 @endsection

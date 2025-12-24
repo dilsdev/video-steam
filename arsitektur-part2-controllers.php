@@ -439,8 +439,8 @@ use Illuminate\Support\Facades\DB;
 class MembershipService
 {
     private array $plans = [
-        'monthly' => ['price' => 50000, 'duration' => 30],
-        'yearly' => ['price' => 500000, 'duration' => 365],
+        'monthly' => ['price' => 20000, 'duration' => 30],
+        'yearly' => ['price' => 199000, 'duration' => 365],
     ];
 
     public function getPlans(): array

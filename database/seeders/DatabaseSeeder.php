@@ -27,7 +27,7 @@ class DatabaseSeeder extends Seeder
             'email' => 'uploader@example.com',
             'password' => Hash::make('password'),
             'role' => 'uploader',
-            'balance' => 150000,
+            'balance' => 120000,
             'is_verified' => true,
             'email_verified_at' => now(),
         ]);

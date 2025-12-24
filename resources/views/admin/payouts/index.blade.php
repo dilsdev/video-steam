@@ -6,7 +6,7 @@
     <h1 style="margin-bottom: 2rem;">Kelola Payout</h1>
 
     <!-- Status Tabs -->
-    <div style="display: flex; gap: 0.5rem; margin-bottom: 2rem;">
+    <div class="status-tabs" style="display: flex; gap: 0.5rem; margin-bottom: 2rem;">
         <a href="{{ route('admin.payouts.index') }}"
             class="btn {{ !request('status') ? 'btn-primary' : 'btn-secondary' }} btn-sm">
             Semua
@@ -87,4 +87,40 @@
             <p style="text-align: center; color: #94a3b8; padding: 2rem;">Tidak ada data payout</p>
         @endif
     </div>
+
+    @push('styles')
+        <style>
+            @media (max-width: 768px) {
+                .status-tabs {
+                    flex-wrap: wrap;
+                    gap: 0.5rem;
+                }
+
+                .status-tabs .btn {
+                    font-size: 0.75rem;
+                    padding: 0.5rem 0.75rem;
+                }
+
+                .table-container {
+                    font-size: 0.8rem;
+                }
+
+                .table-container th,
+                .table-container td {
+                    padding: 0.5rem;
+                }
+            }
+
+            @media (max-width: 480px) {
+                .status-tabs {
+                    flex-direction: column;
+                }
+
+                .status-tabs .btn {
+                    width: 100%;
+                    text-align: center;
+                }
+            }
+        </style>
+    @endpush
 @endsection

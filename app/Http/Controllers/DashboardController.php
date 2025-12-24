@@ -16,16 +16,19 @@ class DashboardController extends Controller
     {
         $user = auth()->user();
 
+        // Get paginated videos
         $videos = $user->videos()
             ->withCount('views')
             ->latest()
-            ->get();
+            ->paginate(10);
 
+        // Get stats from all videos (not just paginated)
+        $allVideos = $user->videos()->get();
         $minPayout = Setting::get('min_payout', 100000);
 
         $stats = [
-            'total_videos' => $videos->count(),
-            'total_views' => $videos->sum('total_views'),
+            'total_videos' => $allVideos->count(),
+            'total_views' => $allVideos->sum('total_views'),
             'total_earnings' => $user->earnings()->sum('amount'),
             'balance' => $user->balance,
             'pending_payouts' => $user->payouts()->where('status', 'pending')->sum('amount'),

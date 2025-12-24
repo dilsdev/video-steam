@@ -561,8 +561,8 @@ class SettingsSeeder extends Seeder
             ['key' => 'min_payout', 'value' => '100000', 'type' => 'int', 'group' => 'payout'],
             ['key' => 'payout_fee', 'value' => '2500', 'type' => 'int', 'group' => 'payout'],
             ['key' => 'default_cpm_rate', 'value' => '2.00', 'type' => 'string', 'group' => 'earning'],
-            ['key' => 'membership_monthly_price', 'value' => '50000', 'type' => 'int', 'group' => 'membership'],
-            ['key' => 'membership_yearly_price', 'value' => '500000', 'type' => 'int', 'group' => 'membership'],
+            ['key' => 'membership_monthly_price', 'value' => '20000', 'type' => 'int', 'group' => 'membership'],
+            ['key' => 'membership_yearly_price', 'value' => '199000', 'type' => 'int', 'group' => 'membership'],
             ['key' => 'max_video_size_mb', 'value' => '500', 'type' => 'int', 'group' => 'upload'],
         ];
 
