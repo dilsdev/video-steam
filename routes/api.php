@@ -15,7 +15,6 @@ Route::get('/user', function (Request $request) {
 |--------------------------------------------------------------------------
 */
 
-
 Route::post('/webhooks/lynk-payment/{token}', [WebhookController::class, 'handleLynkPayment'])
     ->middleware(VerifyLynkSignature::class)
     ->name('webhooks.lynk-payment');
