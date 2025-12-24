@@ -76,7 +76,7 @@ class ImportVideoFromUrl implements ShouldQueue
             Video::create([
                 'user_id' => $this->userId,
                 'title' => $originalName,
-                'description' => "Imported from {$this->url}",
+                'description' => "-",
                 'filename' => $filename,
                 'thumbnail' => null, // Use default
                 'original_name' => $originalName,
