@@ -5,7 +5,10 @@
 @section('content')
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
         <h1>Admin Dashboard</h1>
-        <a href="{{ route('admin.settings.index') }}" class="btn btn-secondary">⚙️ Pengaturan</a>
+        <div style="display: flex; gap: 0.5rem;">
+            <a href="{{ route('admin.videos.import') }}" class="btn btn-primary">📥 Import Video</a>
+            <a href="{{ route('admin.settings.index') }}" class="btn btn-secondary">⚙️ Pengaturan</a>
+        </div>
     </div>
 
     <!-- Stats Cards -->
@@ -109,6 +112,57 @@
                         </span>
                     </div>
                 @endforeach
+            </div>
+        </div>
+
+        <!-- Recent Videos (For Auto Thumbnailing) -->
+        <div class="section" style="grid-column: 1 / -1;">
+            <h2 style="margin-bottom: 1rem;">Video Terbaru</h2>
+            <div class="card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Video</th>
+                            <th>Uploader</th>
+                            <th>Status</th>
+                            <th>Views</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($recentVideos as $video)
+                            <tr>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                        @if ($video->thumbnail)
+                                            <img src="{{ $video->getThumbnailUrl() }}" alt=""
+                                                style="width: 80px; height: 45px; object-fit: cover; border-radius: 6px;">
+                                        @else
+                                            <video src="{{ route('videos.preview', $video) }}#t=10" muted
+                                                preload="metadata"
+                                                data-upload-url="{{ route('uploader.videos.auto-thumbnail', $video) }}"
+                                                style="width: 80px; height: 45px; object-fit: cover; border-radius: 6px;"
+                                                onmouseover="this.play()"
+                                                onmouseout="this.pause();this.currentTime=10;"></video>
+                                        @endif
+                                        <div>
+                                            <div style="font-weight: 500;">{{ $video->title }}</div>
+                                            <div style="font-size: 0.75rem; color: #64748b;">
+                                                {{ $video->created_at->diffForHumans() }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ $video->user->name }}</td>
+                                <td>
+                                    <span
+                                        class="badge {{ $video->status === 'ready' ? 'badge-success' : 'badge-warning' }}">
+                                        {{ ucfirst($video->status) }}
+                                    </span>
+                                </td>
+                                <td>{{ number_format($video->total_views) }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>

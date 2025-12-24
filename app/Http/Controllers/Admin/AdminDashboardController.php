@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Earning;
+use App\Models\Membership;
+use App\Models\Payout;
 use App\Models\User;
 use App\Models\Video;
-use App\Models\Earning;
-use App\Models\Payout;
-use App\Models\Membership;
 
 class AdminDashboardController extends Controller
 {
@@ -46,6 +46,12 @@ class AdminDashboardController extends Controller
             ->orderBy('calculation_date')
             ->get();
 
-        return view('admin.dashboard', compact('stats', 'recentPayouts', 'recentUsers', 'earningsChart'));
+        // Get recent videos
+        $recentVideos = Video::with('user')
+            ->latest()
+            ->take(6)
+            ->get();
+
+        return view('admin.dashboard', compact('stats', 'recentPayouts', 'recentUsers', 'recentVideos', 'earningsChart'));
     }
 }

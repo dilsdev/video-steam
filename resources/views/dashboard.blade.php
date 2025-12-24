@@ -57,8 +57,17 @@
                                 <tr>
                                     <td>
                                         <div style="display: flex; align-items: center; gap: 0.75rem;">
-                                            <img src="{{ $video->getThumbnailUrl() }}" alt=""
-                                                style="width: 80px; height: 45px; object-fit: cover; border-radius: 6px;">
+                                            @if ($video->thumbnail)
+                                                <img src="{{ $video->getThumbnailUrl() }}" alt=""
+                                                    style="width: 80px; height: 45px; object-fit: cover; border-radius: 6px;">
+                                            @else
+                                                <video src="{{ route('videos.preview', $video) }}#t=10" muted
+                                                    preload="metadata"
+                                                    data-upload-url="{{ route('uploader.videos.auto-thumbnail', $video) }}"
+                                                    style="width: 80px; height: 45px; object-fit: cover; border-radius: 6px;"
+                                                    onmouseover="this.play()"
+                                                    onmouseout="this.pause();this.currentTime=10;"></video>
+                                            @endif
                                             <div>
                                                 <a href="{{ route('videos.show', $video) }}"
                                                     style="font-weight: 500; color: white;">{{ Str::limit($video->title, 40) }}</a>

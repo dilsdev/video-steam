@@ -633,6 +633,101 @@
             }
         });
     </script>
+
+    {{-- Auto Thumbnail Generation --}}
+    @auth
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // Use data attribute as selector, it's more reliable
+                const previewVideos = document.querySelectorAll('video[data-upload-url]');
+
+                if (previewVideos.length > 0) {
+                    const queue = Array.from(previewVideos);
+                    let processing = false;
+
+                    async function processQueue() {
+                        if (processing) return;
+                        if (queue.length === 0) return;
+
+                        processing = true;
+                        const videoEl = queue.shift();
+                        const uploadUrl = videoEl.getAttribute('data-upload-url');
+
+                        if (uploadUrl) {
+                            try {
+                                // Create off-screen processing
+                                const tempVideo = document.createElement('video');
+                                // Ensure the video loads the same source
+                                tempVideo.src = videoEl.src || videoEl.querySelector('source')?.src;
+                                tempVideo.muted = true;
+                                tempVideo.playsInline = true;
+
+                                await new Promise((resolve, reject) => {
+                                    const timeout = setTimeout(() => reject('Timeout loading video'),
+                                        10000);
+
+                                    tempVideo.onloadeddata = () => {
+                                        tempVideo.currentTime = 10;
+                                    };
+
+                                    tempVideo.onseeked = () => {
+                                        clearTimeout(timeout);
+                                        resolve();
+                                    };
+
+                                    tempVideo.onerror = (e) => {
+                                        clearTimeout(timeout);
+                                        reject('Video load error');
+                                    };
+
+                                    tempVideo.load();
+                                });
+
+                                // Capture frame
+                                const canvas = document.createElement('canvas');
+                                canvas.width = tempVideo.videoWidth;
+                                canvas.height = tempVideo.videoHeight;
+                                const ctx = canvas.getContext('2d');
+                                ctx.drawImage(tempVideo, 0, 0, canvas.width, canvas.height);
+
+                                const base64 = canvas.toDataURL('image/jpeg', 0.8);
+
+                                // Upload
+                                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute(
+                                    'content');
+
+                                const response = await fetch(uploadUrl, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'X-CSRF-TOKEN': csrfToken
+                                    },
+                                    body: JSON.stringify({
+                                        image: base64
+                                    })
+                                });
+
+                                if (response.ok) {
+                                    console.log('Thumbnail generated for:', uploadUrl);
+                                }
+                            } catch (e) {
+                                console.error('Thumbnail generation failed:', e);
+                            }
+                        }
+
+                        processing = false;
+                        if (queue.length > 0) {
+                            setTimeout(processQueue, 1000);
+                        }
+                    }
+
+                    if (queue.length > 0) {
+                        setTimeout(processQueue, 2000);
+                    }
+                }
+            });
+        </script>
+    @endauth
     @stack('scripts')
 </body>
 

@@ -20,6 +20,9 @@ use Illuminate\Support\Facades\Route;
 // Public routes
 Route::get('/', [VideoController::class, 'index'])->name('home');
 Route::get('/v/{video:slug}', [VideoController::class, 'show'])->name('videos.show');
+Route::get('/videos/{video:slug}/preview', [VideoController::class, 'preview'])
+    ->name('videos.preview')
+    ->middleware('throttle:120,1');
 
 // Adblock monetization routes
 Route::get('/adblock-content', [AdblockMonetizationController::class, 'getAdblockContent'])->name('adblock.content');
@@ -31,7 +34,7 @@ Route::middleware('guest')->group(function () {
     Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
 
     // Rate limit: 5 attempts per minute per IP for login/register
-    Route::middleware(['throttle:10,1'])->group(function () {
+    Route::middleware(['throttle:60,1'])->group(function () {
         Route::post('/login', [AuthController::class, 'login']);
         Route::post('/register', [AuthController::class, 'register']);
     });
@@ -46,7 +49,7 @@ Route::middleware(['throttle:100,1'])->group(function () {
 });
 
 // Public video token (rate limited to prevent abuse)
-Route::middleware(['throttle:30,1'])->post('/videos/{video}/token', [VideoController::class, 'generateToken'])->name('videos.token');
+Route::middleware(['throttle:240,1'])->post('/videos/{video}/token', [VideoController::class, 'generateToken'])->name('videos.token');
 
 // Membership - public view so guests can see pricing
 Route::get('/memberships', [MembershipController::class, 'index'])->name('memberships.index');
@@ -62,7 +65,9 @@ Route::middleware(['auth', \App\Http\Middleware\CheckUploader::class])
         Route::get('/videos/create', [VideoController::class, 'create'])->name('videos.create');
         Route::post('/videos', [VideoController::class, 'store'])->name('videos.store');
         Route::get('/videos/{video}/edit', [VideoController::class, 'edit'])->name('videos.edit');
+
         Route::put('/videos/{video}', [VideoController::class, 'update'])->name('videos.update');
+        Route::post('/videos/{video}/auto-thumbnail', [VideoController::class, 'updateAutoThumbnail'])->name('videos.auto-thumbnail');
         Route::delete('/videos/{video}', [VideoController::class, 'destroy'])->name('videos.destroy');
 
         // Payouts
@@ -87,4 +92,8 @@ Route::middleware(['auth', \App\Http\Middleware\CheckAdmin::class])
         Route::get('/payouts', [PayoutManagementController::class, 'index'])->name('payouts.index');
         Route::get('/payouts/{payout}', [PayoutManagementController::class, 'show'])->name('payouts.show');
         Route::post('/payouts/{payout}/process', [PayoutManagementController::class, 'process'])->name('payouts.process');
+
+        // Video Import
+        Route::get('/videos/import', [\App\Http\Controllers\Admin\VideoImportController::class, 'create'])->name('videos.import');
+        Route::post('/videos/import', [\App\Http\Controllers\Admin\VideoImportController::class, 'store'])->name('videos.import.store');
     });

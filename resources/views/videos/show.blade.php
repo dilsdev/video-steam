@@ -3,6 +3,13 @@
 @section('title', $video->title)
 
 @section('content')
+    @push('styles')
+        <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+    @endpush
+    @push('scripts')
+        <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
+    @endpush
+
     {{-- Modal 1 - Muncul di detik 2 --}}
     @if (!$skipAds)
         <div id="promo-modal-1"
@@ -178,8 +185,16 @@
                     <a href="{{ route('videos.show', $related) }}" class="related-video-card"
                         style="display: block; background: rgba(30,41,59,0.5); border-radius: 12px; overflow: hidden; transition: transform 0.3s, box-shadow 0.3s;">
                         <div style="position: relative;">
-                            <img src="{{ $related->getThumbnailUrl() }}" alt="{{ $related->title }}"
-                                style="width: 100%; height: 160px; object-fit: cover;">
+                            @if ($related->thumbnail)
+                                <img src="{{ $related->getThumbnailUrl() }}" alt="{{ $related->title }}"
+                                    style="width: 100%; height: 160px; object-fit: cover;">
+                            @else
+                                <video src="{{ route('videos.preview', $related) }}#t=10" muted preload="metadata"
+                                    @if (auth()->check() && (auth()->user()->isAdmin() || auth()->id() === $related->user_id)) data-upload-url="{{ route('uploader.videos.auto-thumbnail', $related) }}" @endif
+                                    style="width: 100%; height: 160px; object-fit: cover;" onmouseover="this.play()"
+                                    onmouseout="this.pause();this.currentTime=10;"></video>
+                            @endif
+
                             @if ($related->duration)
                                 <span
                                     style="position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.8); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; color: white;">{{ gmdate('i:s', $related->duration) }}</span>
@@ -548,9 +563,15 @@
                 }
 
                 async function initPlayer() {
+                    if (!videoElement) {
+                        console.error('Video element not found');
+                        return;
+                    }
+
                     const tokenData = await getStreamToken();
 
                     if (!tokenData || !tokenData.token) {
+                        console.error('Failed to get token:', tokenData);
                         if (videoLoading) {
                             videoLoading.innerHTML =
                                 '<div style="text-align:center;color:#ef4444;"><p>Gagal memuat video</p><button onclick="location.reload()" style="margin-top:1rem;padding:0.5rem 1rem;background:#6366f1;color:white;border:none;border-radius:8px;cursor:pointer;">Refresh</button></div>';
@@ -559,45 +580,60 @@
                     }
 
                     // Set video source
-                    videoElement.querySelector('source').src = tokenData.stream_url;
-                    videoElement.load();
+                    const source = videoElement.querySelector('source');
+                    if (source) {
+                        source.src = tokenData.stream_url;
+                        videoElement.load();
+                    }
 
                     // Initialize Plyr
-                    const player = new Plyr('#player', {
-                        controls: ['play-large', 'play', 'progress', 'current-time', 'duration', 'mute',
-                            'volume', 'captions', 'settings', 'pip', 'airplay', 'fullscreen'
-                        ],
-                        settings: ['captions', 'quality', 'speed', 'loop'],
-                        speed: {
-                            selected: 1,
-                            options: [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
-                        },
-                        keyboard: {
-                            focused: true,
-                            global: true
-                        },
-                        tooltips: {
-                            controls: true,
-                            seek: true
-                        },
-                        displayDuration: true,
-                        invertTime: false,
-                        ratio: '16:9'
-                    });
+                    try {
+                        const player = new Plyr('#player', {
+                            controls: ['play-large', 'play', 'progress', 'current-time', 'duration', 'mute',
+                                'volume', 'captions', 'settings', 'pip', 'airplay', 'fullscreen'
+                            ],
+                            settings: ['captions', 'quality', 'speed', 'loop'],
+                            speed: {
+                                selected: 1,
+                                options: [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
+                            },
+                            keyboard: {
+                                focused: true,
+                                global: true
+                            },
+                            tooltips: {
+                                controls: true,
+                                seek: true
+                            },
+                            displayDuration: true,
+                            invertTime: false,
+                            ratio: '16:9'
+                        });
 
-                    player.on('ready', function() {
+                        player.on('ready', function() {
+                            if (videoLoading) videoLoading.style.display = 'none';
+                        });
+
+                        player.on('play', function() {
+                            if (!skipAds && tokenData.token) {
+                                confirmAdWatched(tokenData.token);
+                            }
+                        });
+
+                        player.on('error', function(error) {
+                            console.error('Player error:', error);
+                            if (videoLoading) {
+                                videoLoading.style.display = 'flex';
+                                videoLoading.innerHTML =
+                                    '<div style="text-align:center;color:#ef4444;"><p>Error pemutaran video</p></div>';
+                            }
+                        });
+                    } catch (e) {
+                        console.error('Plyr initialization failed:', e);
+                        // Fallback: just show the native video if Plyr fails
+                        videoElement.controls = true;
                         if (videoLoading) videoLoading.style.display = 'none';
-                    });
-
-                    player.on('play', function() {
-                        if (!skipAds && tokenData.token) {
-                            confirmAdWatched(tokenData.token);
-                        }
-                    });
-
-                    player.on('error', function(error) {
-                        console.error('Player error:', error);
-                    });
+                    }
                 }
 
                 initPlayer();

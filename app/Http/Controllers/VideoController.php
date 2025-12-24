@@ -43,7 +43,7 @@ class VideoController extends Controller
     public function store(Request $request)
     {
         $maxVideoSizeKb = \App\Models\Setting::get('max_video_size_mb', 500) * 1024;
-        
+
         $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string|max:5000',
@@ -78,17 +78,17 @@ class VideoController extends Controller
             // Manual file upload - gunakan path langsung untuk konsistensi
             $thumbFile = $request->file('thumbnail');
             $thumbName = $video->slug.'.'.$thumbFile->getClientOriginalExtension();
-            
+
             // Ensure thumbnails directory exists
             $thumbnailDir = storage_path('app/public/thumbnails');
-            if (!is_dir($thumbnailDir)) {
+            if (! is_dir($thumbnailDir)) {
                 mkdir($thumbnailDir, 0755, true);
             }
-            
+
             // Move file ke lokasi thumbnails
             $thumbFile->move($thumbnailDir, $thumbName);
             $video->update(['thumbnail' => $thumbName]);
-            
+
             \Log::info("Manual thumbnail saved: {$thumbName}");
         } elseif ($request->filled('auto_thumbnail')) {
             // Auto-generated thumbnail from JavaScript (base64)
@@ -101,6 +101,27 @@ class VideoController extends Controller
     }
 
     /**
+     * Update thumbnail from auto-generated base64
+     */
+    public function updateAutoThumbnail(Request $request, Video $video)
+    {
+        // Allow owner or admin
+        if ($video->user_id !== auth()->id() && ! auth()->user()->isAdmin()) {
+            abort(403);
+        }
+
+        $request->validate([
+            'image' => 'required|string',
+        ]);
+
+        if ($this->saveBase64Thumbnail($video, $request->image)) {
+            return response()->json(['success' => true]);
+        }
+
+        return response()->json(['error' => 'Failed to save thumbnail'], 500);
+    }
+
+    /**
      * Save base64 thumbnail from JavaScript Canvas
      */
     private function saveBase64Thumbnail(Video $video, string $base64Data): bool
@@ -108,7 +129,15 @@ class VideoController extends Controller
         try {
             // Remove data URL prefix (data:image/jpeg;base64,)
             if (preg_match('/^data:image\/(\w+);base64,/', $base64Data, $matches)) {
-                $extension = $matches[1] === 'jpeg' ? 'jpg' : $matches[1];
+                $extension = strtolower($matches[1]);
+                $extension = $extension === 'jpeg' ? 'jpg' : $extension;
+                
+                // SECURITY: Whitelist allowed extensions
+                if (!in_array($extension, ['jpg', 'png', 'webp'])) {
+                    $extension = 'jpg';
+                }
+                
+                // IMPORTANT: Strip the header
                 $base64Data = substr($base64Data, strpos($base64Data, ',') + 1);
             } else {
                 $extension = 'jpg';
@@ -141,6 +170,35 @@ class VideoController extends Controller
             \Log::error("Error saving base64 thumbnail: " . $e->getMessage());
             return false;
         }
+    }
+
+    /**
+     * Preview video (direct file access for creating thumbnails)
+     */
+    public function preview(Video $video)
+    {
+        if (!$video->isReady()) {
+            abort(404);
+        }
+
+        // SECURITY: Check privacy
+        if (!$video->is_public) {
+            $user = auth()->user();
+            if (!$user || ($user->id !== $video->user_id && !$user->isAdmin())) {
+                abort(403);
+            }
+        }
+
+        $path = $video->getStoragePath();
+
+        if (!file_exists($path)) {
+            abort(404);
+        }
+
+        return response()->file($path, [
+            'Cache-Control' => 'public, max-age=31536000, immutable',
+            'Accept-Ranges' => 'bytes',
+        ]);
     }
 
     /**
@@ -233,7 +291,7 @@ class VideoController extends Controller
         if ($request->hasFile('thumbnail')) {
             // Delete old thumbnail
             if ($video->thumbnail) {
-                $oldPath = storage_path('app/public/thumbnails/' . $video->thumbnail);
+                $oldPath = storage_path('app/public/thumbnails/'.$video->thumbnail);
                 if (file_exists($oldPath)) {
                     unlink($oldPath);
                 }
@@ -241,13 +299,13 @@ class VideoController extends Controller
 
             $thumbFile = $request->file('thumbnail');
             $thumbName = $video->slug.'.'.$thumbFile->getClientOriginalExtension();
-            
+
             // Ensure thumbnails directory exists
             $thumbnailDir = storage_path('app/public/thumbnails');
-            if (!is_dir($thumbnailDir)) {
+            if (! is_dir($thumbnailDir)) {
                 mkdir($thumbnailDir, 0755, true);
             }
-            
+
             // Move file ke lokasi thumbnails
             $thumbFile->move($thumbnailDir, $thumbName);
             $video->update(['thumbnail' => $thumbName]);

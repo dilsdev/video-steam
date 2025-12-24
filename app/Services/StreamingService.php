@@ -3,8 +3,8 @@
 namespace App\Services;
 
 use App\Models\Video;
-use App\Models\VideoView;
 use App\Models\VideoToken;
+use App\Models\VideoView;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -21,9 +21,9 @@ class StreamingService
             ->where('ip_address', $request->ip())
             ->where('expires_at', '<', now())
             ->delete();
-        
+
         $token = Str::random(64);
-        
+
         VideoToken::create([
             'token' => $token,
             'video_id' => $video->id,
@@ -32,9 +32,9 @@ class StreamingService
             'session_id' => $request->session()->getId(),
             'ad_watched' => false,
             'expires_at' => now()->addMinutes(30),
-            'created_at' => now()
+            'created_at' => now(),
         ]);
-        
+
         return $token;
     }
 
@@ -46,61 +46,76 @@ class StreamingService
         $path = $video->getStoragePath();
         $fileSize = filesize($path);
         $mimeType = $video->mime_type ?: 'video/mp4';
-        
+
         $start = 0;
         $end = $fileSize - 1;
         $length = $fileSize;
         $statusCode = 200;
-        
+
         // Handle Range Request untuk seeking
         if ($request->hasHeader('Range')) {
             $range = $request->header('Range');
-            
+
             if (preg_match('/bytes=(\d+)-(\d*)/', $range, $matches)) {
                 $start = intval($matches[1]);
-                $end = isset($matches[2]) && $matches[2] !== '' 
-                    ? intval($matches[2]) 
+                $end = isset($matches[2]) && $matches[2] !== ''
+                    ? intval($matches[2])
                     : $fileSize - 1;
-                
+
                 // Validasi range
                 if ($start > $end || $start >= $fileSize) {
                     abort(416, 'Requested Range Not Satisfiable');
                 }
-                
+
                 $length = $end - $start + 1;
                 $statusCode = 206; // Partial Content
             }
         }
-        
+
         $headers = [
             'Content-Type' => $mimeType,
             'Content-Length' => $length,
             'Accept-Ranges' => 'bytes',
             'Content-Range' => "bytes {$start}-{$end}/{$fileSize}",
-            'Cache-Control' => 'no-cache, no-store, must-revalidate',
+            'Cache-Control' => 'private, max-age=2592000', // Allow caching for performance
             'Pragma' => 'no-cache',
             'Expires' => '0',
             'X-Content-Type-Options' => 'nosniff',
             'X-Frame-Options' => 'SAMEORIGIN',
         ];
-        
-        return response()->stream(function() use ($path, $start, $length) {
+
+        return response()->stream(function () use ($path, $start, $length) {
             $stream = fopen($path, 'rb');
-            fseek($stream, $start);
-            
-            $remaining = $length;
-            $bufferSize = 8192; // 8KB chunks
-            
-            while (!feof($stream) && $remaining > 0) {
-                $readSize = min($bufferSize, $remaining);
-                echo fread($stream, $readSize);
-                $remaining -= $readSize;
-                flush();
-                
-                // Cegah memory leak
-                if (connection_aborted()) break;
+
+            if ($stream === false) {
+                return;
             }
-            
+
+            fseek($stream, $start);
+
+            $remaining = $length;
+            $bufferSize = 1024 * 256; // 256KB chunks (Optimized for streaming)
+
+            while (! feof($stream) && $remaining > 0) {
+                // Check if connection is lost before reading
+                if (connection_aborted()) {
+                    fclose($stream);
+
+                    return;
+                }
+
+                $readSize = min($bufferSize, $remaining);
+                $data = fread($stream, $readSize);
+
+                if ($data === false) {
+                    break;
+                }
+
+                echo $data;
+                $remaining -= strlen($data); // Safe decrement
+                flush();
+            }
+
             fclose($stream);
         }, $statusCode, $headers);
     }
@@ -113,18 +128,18 @@ class StreamingService
         $sessionId = $request->session()->getId();
         $ip = $request->ip();
         $isMember = auth()->check() && auth()->user()->hasActiveMembership();
-        
+
         // Cek apakah sudah ada view dari IP+session dalam 24 jam
         $exists = VideoView::where('video_id', $video->id)
             ->where('session_id', $sessionId)
             ->where('ip_address', $ip)
             ->where('created_at', '>', now()->subHours(24))
             ->exists();
-        
+
         if ($exists) {
             return false;
         }
-        
+
         VideoView::create([
             'video_id' => $video->id,
             'user_id' => auth()->id(),
@@ -133,11 +148,11 @@ class StreamingService
             'user_agent' => $request->userAgent(),
             'is_member_view' => $isMember,
             'is_counted' => false,
-            'created_at' => now()
+            'created_at' => now(),
         ]);
-        
+
         $video->increment('total_views');
-        
+
         return true;
     }
 }

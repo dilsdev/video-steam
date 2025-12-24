@@ -26,7 +26,14 @@
             <div class="grid grid-4">
                 @foreach ($videos as $video)
                     <a href="{{ route('videos.show', $video) }}" class="video-card">
-                        <img src="{{ $video->getThumbnailUrl() }}" alt="{{ $video->title }}" loading="lazy">
+                        @if ($video->thumbnail)
+                            <img src="{{ $video->getThumbnailUrl() }}" alt="{{ $video->title }}" loading="lazy">
+                        @else
+                            <video src="{{ route('videos.preview', $video) }}#t=10" muted preload="metadata"
+                                @if (auth()->check() && (auth()->user()->isAdmin() || auth()->id() === $video->user_id)) data-upload-url="{{ route('uploader.videos.auto-thumbnail', $video) }}" @endif
+                                style="width: 100%; aspect-ratio: 16/9; object-fit: cover;" onmouseover="this.play()"
+                                onmouseout="this.pause();this.currentTime=10;"></video>
+                        @endif
                         <div class="video-card-body">
                             <h4>{{ $video->title }}</h4>
                             <p>{{ number_format($video->total_views) }} views • {{ $video->user->name }}</p>
@@ -43,7 +50,8 @@
                 <p style="color: #94a3b8;">Belum ada video yang tersedia.</p>
                 @auth
                     @if (auth()->user()->isUploader())
-                        <a href="{{ route('uploader.videos.create') }}" class="btn btn-primary" style="margin-top: 1rem;">Upload
+                        <a href="{{ route('uploader.videos.create') }}" class="btn btn-primary"
+                            style="margin-top: 1rem;">Upload
                             Video Pertama</a>
                     @endif
                 @endauth
