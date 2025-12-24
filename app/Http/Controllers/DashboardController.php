@@ -2,10 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Video;
 use App\Models\Earning;
 use App\Models\Setting;
-use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {

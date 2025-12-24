@@ -3,7 +3,10 @@
 @section('title', 'Admin Dashboard')
 
 @section('content')
-    <h1 style="margin-bottom: 2rem;">Admin Dashboard</h1>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h1>Admin Dashboard</h1>
+        <a href="{{ route('admin.settings.index') }}" class="btn btn-secondary">⚙️ Pengaturan</a>
+    </div>
 
     <!-- Stats Cards -->
     <div class="stats-grid admin-stats-grid" style="grid-template-columns: repeat(4, 1fr);">

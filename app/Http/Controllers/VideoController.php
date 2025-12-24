@@ -42,10 +42,12 @@ class VideoController extends Controller
      */
     public function store(Request $request)
     {
+        $maxVideoSizeKb = \App\Models\Setting::get('max_video_size_mb', 500) * 1024;
+        
         $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string|max:5000',
-            'video' => 'required|file|mimes:mp4,mov,avi,webm,mkv|max:512000',
+            'video' => "required|file|mimes:mp4,mov,avi,webm,mkv|max:{$maxVideoSizeKb}",
             'thumbnail' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'auto_thumbnail' => 'nullable|string', // Base64 data URL from JavaScript
             'is_public' => 'boolean',

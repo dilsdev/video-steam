@@ -34,6 +34,13 @@ class AdConfig extends Model
 
     public static function getAverageCpm(): float
     {
-        return static::where('is_active', true)->avg('cpm_rate') ?? 2.00;
+        $avg = static::where('is_active', true)->avg('cpm_rate');
+        
+        // If no active ads, use default from settings
+        if ($avg === null) {
+            return (float) Setting::get('default_cpm_rate', 1500);
+        }
+        
+        return $avg;
     }
 }

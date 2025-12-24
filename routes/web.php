@@ -79,6 +79,10 @@ Route::middleware(['auth', \App\Http\Middleware\CheckAdmin::class])
     ->group(function () {
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 
+        // Settings management
+        Route::get('/settings', [\App\Http\Controllers\Admin\AdminSettingsController::class, 'index'])->name('settings.index');
+        Route::put('/settings', [\App\Http\Controllers\Admin\AdminSettingsController::class, 'update'])->name('settings.update');
+
         // Payout management
         Route::get('/payouts', [PayoutManagementController::class, 'index'])->name('payouts.index');
         Route::get('/payouts/{payout}', [PayoutManagementController::class, 'show'])->name('payouts.show');

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Models\Membership;
+use App\Models\Setting;
 use Illuminate\Support\Facades\DB;
 
 class MembershipService
@@ -12,13 +13,13 @@ class MembershipService
     {
         return [
             'monthly' => [
-                'price' => 20000, 
+                'price' => Setting::get('membership_monthly_price', 20000), 
                 'duration' => 30, 
                 'label' => 'Bulanan',
                 'payment_url' => config('services.lynk.payment_url_monthly', '#')
             ],
             'yearly' => [
-                'price' => 199000, 
+                'price' => Setting::get('membership_yearly_price', 199000), 
                 'duration' => 365, 
                 'label' => 'Tahunan',
                 'payment_url' => config('services.lynk.payment_url_yearly', '#')
