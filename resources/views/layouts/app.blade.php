@@ -8,6 +8,7 @@
     <title>@yield('title', 'Video Platform') - {{ config('app.name') }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="icon" type="image/svg+xml" href="{{ asset('icon-v.svg') }}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     {{-- Adcash Library --}}
     <script id="aclib" type="text/javascript" src="//acscdn.com/script/aclib.js"></script>
