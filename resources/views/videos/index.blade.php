@@ -3,16 +3,16 @@
 @section('title', 'Home')
 
 @section('content')
-    <div class="hero" style="text-align: center; padding: 3rem 0; margin-bottom: 2rem;">
-        <h1
-            style="font-size: 2.5rem; margin-bottom: 1rem; background: linear-gradient(135deg, #6366f1, #0ea5e9); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+    <div class="hero" style="text-align: center; padding: 3rem 1rem; margin-bottom: 2rem;">
+        <h1 style="font-size: 2.25rem; margin-bottom: 1rem; font-weight: 700; color: #fff;">
             Upload Video, Dapatkan Penghasilan
         </h1>
-        <p style="color: #94a3b8; font-size: 1.125rem; max-width: 600px; margin: 0 auto;">
-            Platform video dengan monetisasi untuk kreator. Upload video dan dapatkan penghasilan dari setiap penayangan.
+        <p style="color: #a1a1aa; font-size: 1.125rem; max-width: 550px; margin: 0 auto 1.5rem; line-height: 1.7;">
+            Platform monetisasi video untuk kreator Indonesia. Upload video Anda dan dapatkan penghasilan dari setiap
+            penayangan.
         </p>
         @guest
-            <div style="margin-top: 2rem; display: flex; gap: 1rem; justify-content: center;">
+            <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
                 <a href="{{ route('register') }}" class="btn btn-primary">Mulai Sekarang</a>
                 <a href="{{ route('login') }}" class="btn btn-secondary">Login</a>
             </div>

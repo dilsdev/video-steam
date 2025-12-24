@@ -40,8 +40,8 @@ Route::middleware(['throttle:100,1'])->group(function () {
     Route::post('/stream/{token}/ad-watched', [StreamController::class, 'confirmAdWatched'])->name('stream.ad-watched');
 });
 
-// Public video token (untuk guest & authenticated users)
-Route::post('/videos/{video}/token', [VideoController::class, 'generateToken'])->name('videos.token');
+// Public video token (rate limited to prevent abuse)
+Route::middleware(['throttle:30,1'])->post('/videos/{video}/token', [VideoController::class, 'generateToken'])->name('videos.token');
 
 // Membership - public view so guests can see pricing
 Route::get('/memberships', [MembershipController::class, 'index'])->name('memberships.index');

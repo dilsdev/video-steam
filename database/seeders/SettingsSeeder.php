@@ -12,7 +12,8 @@ class SettingsSeeder extends Seeder
         $settings = [
             ['key' => 'min_payout', 'value' => '100000', 'type' => 'int', 'group' => 'payout'],
             ['key' => 'payout_fee', 'value' => '2500', 'type' => 'int', 'group' => 'payout'],
-            ['key' => 'default_cpm_rate', 'value' => '2.00', 'type' => 'float', 'group' => 'earning'],
+            ['key' => 'platform_fee_percent', 'value' => '50', 'type' => 'int', 'group' => 'earning'],
+            ['key' => 'default_cpm_rate', 'value' => '1500', 'type' => 'float', 'group' => 'earning'],
             ['key' => 'membership_monthly_price', 'value' => '20000', 'type' => 'int', 'group' => 'membership'],
             ['key' => 'membership_yearly_price', 'value' => '199000', 'type' => 'int', 'group' => 'membership'],
             ['key' => 'max_video_size_mb', 'value' => '500', 'type' => 'int', 'group' => 'upload'],
