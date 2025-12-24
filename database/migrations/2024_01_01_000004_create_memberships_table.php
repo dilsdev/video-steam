@@ -17,8 +17,8 @@ return new class extends Migration
             $table->decimal('final_price', 10, 2);
             $table->string('payment_method')->nullable();
             $table->string('payment_reference')->nullable();
-            $table->timestamp('starts_at');
-            $table->timestamp('expires_at');
+            $table->timestamp('starts_at')->nullable();
+            $table->timestamp('expires_at')->nullable();
             $table->string('status')->default('pending');
             $table->timestamps();
             $table->index(['user_id', 'status', 'expires_at']);
