@@ -125,6 +125,69 @@
                             <div style="font-weight: 600;">{{ $video->user->name }}</div>
                             <div style="font-size: 0.875rem; color: #64748b;">Uploader</div>
                         </div>
+
+                        <button id="share-btn" class="btn btn-secondary"
+                            style="margin-left: auto; display: flex; align-items: center; gap: 0.5rem; background: var(--bg-hover); border: 1px solid var(--border);">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                            Copy Link Video
+                        </button>
+
+                        <script>
+                            document.getElementById('share-btn').addEventListener('click', async function() {
+                                const btn = this;
+                                const originalHtml = btn.innerHTML;
+                                const url = window.location.href;
+
+                                function showSuccess() {
+                                    btn.innerHTML = `
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="20 6 9 17 4 12"></polyline>
+                                        </svg>
+                                        <span style="color:var(--success)">Link Disalin!</span>
+                                    `;
+                                    setTimeout(() => {
+                                        btn.innerHTML = originalHtml;
+                                    }, 2000);
+                                }
+
+                                // Robust Copy Mechanism
+                                if (navigator.clipboard && window.isSecureContext) {
+                                    // Method 1: Modern API (HTTPS only)
+                                    navigator.clipboard.writeText(url).then(showSuccess).catch(() => fallbackCopy(url));
+                                } else {
+                                    // Method 2: Fallback for HTTP/Older Browsers
+                                    fallbackCopy(url);
+                                }
+
+                                function fallbackCopy(text) {
+                                    const textArea = document.createElement("textarea");
+                                    textArea.value = text;
+
+                                    // Ensure textarea is not visible but part of DOM
+                                    textArea.style.position = "fixed";
+                                    textArea.style.left = "-9999px";
+                                    textArea.style.top = "0";
+                                    document.body.appendChild(textArea);
+
+                                    textArea.focus();
+                                    textArea.select();
+
+                                    try {
+                                        document.execCommand('copy');
+                                        showSuccess();
+                                    } catch (err) {
+                                        console.error('Copy failed', err);
+                                        alert('Gagal menyalin link. Silakan copy manual dari address bar.');
+                                    }
+
+                                    document.body.removeChild(textArea);
+                                }
+                            });
+                        </script>
                     </div>
 
                     @if ($video->description)
