@@ -15,7 +15,7 @@ return new class extends Migration
             $table->foreignId('user_id')->nullable()->constrained()->onDelete('set null');
             $table->text('details')->nullable();
             $table->string('user_agent')->nullable();
-            $table->timestamp('created_at');
+            $table->timestamp('created_at')->nullable();
             $table->index(['event_type', 'ip_address', 'created_at']);
         });
     }

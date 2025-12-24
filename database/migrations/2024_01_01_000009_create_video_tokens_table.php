@@ -15,8 +15,8 @@ return new class extends Migration
             $table->string('ip_address', 45);
             $table->string('session_id', 100);
             $table->boolean('ad_watched')->default(false);
-            $table->timestamp('expires_at');
-            $table->timestamp('created_at');
+            $table->timestamp('expires_at')->nullable();
+            $table->timestamp('created_at')->nullable();
             $table->index(['token', 'expires_at', 'ip_address']);
         });
     }

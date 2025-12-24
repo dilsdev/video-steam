@@ -33,7 +33,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('membership_id')->constrained()->onDelete('cascade');
             $table->decimal('discount_amount', 10, 2);
-            $table->timestamp('used_at');
+            $table->timestamp('used_at')->nullable();
             $table->unique(['voucher_id', 'user_id', 'membership_id']);
         });
     }

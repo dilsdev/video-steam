@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('country', 5)->nullable();
             $table->boolean('is_member_view')->default(false);
             $table->boolean('is_counted')->default(false);
-            $table->timestamp('created_at');
+            $table->timestamp('created_at')->nullable();
             $table->index(['video_id', 'is_counted', 'is_member_view']);
             $table->index(['ip_address', 'session_id', 'created_at']);
         });
