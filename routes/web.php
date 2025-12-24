@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdblockMonetizationController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\PayoutManagementController;
 use App\Http\Controllers\AuthController;
@@ -20,11 +21,15 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [VideoController::class, 'index'])->name('home');
 Route::get('/v/{video:slug}', [VideoController::class, 'show'])->name('videos.show');
 
+// Adblock monetization routes
+Route::get('/adblock-content', [AdblockMonetizationController::class, 'getAdblockContent'])->name('adblock.content');
+Route::post('/adblock-check', [AdblockMonetizationController::class, 'checkAndServe'])->name('adblock.check');
+
 // Auth routes (with rate limiting to prevent brute force/automation)
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
     Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
-    
+
     // Rate limit: 5 attempts per minute per IP for login/register
     Route::middleware(['throttle:10,1'])->group(function () {
         Route::post('/login', [AuthController::class, 'login']);

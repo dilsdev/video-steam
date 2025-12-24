@@ -137,6 +137,9 @@
                         </div>
                         <div id="awn-z10743074"></div>
                     </div>
+
+                    {{-- Adblock Monetization Container - Shows when adblock is detected --}}
+                    <div id="adblock-monetization-container" style="display: none; margin: 1.5rem 0;"></div>
                 @endif
 
                 {{-- Member CTA Card --}}
@@ -600,5 +603,93 @@
                 initPlayer();
             });
         </script>
+
+        {{-- Adblock Detection & Alternative Monetization --}}
+        @if (!$skipAds)
+            <script>
+                (function() {
+                    // Adblock detection
+                    function detectAdblock() {
+                        return new Promise((resolve) => {
+                            // Method 1: Check if ad script loaded
+                            if (typeof aclib === 'undefined') {
+                                resolve(true);
+                                return;
+                            }
+
+                            // Method 2: Create a bait element
+                            const bait = document.createElement('div');
+                            bait.innerHTML = '&nbsp;';
+                            bait.className =
+                                'adsbox ad-zone pub_300x250 pub_300x250m pub_728x90 text-ad textAd text_ad text_ads text-ads text-ad-links ad-text adSense adBlock adContent adBanner';
+                            bait.style.cssText =
+                                'width: 1px !important; height: 1px !important; position: absolute !important; left: -10000px !important; top: -1000px !important;';
+                            document.body.appendChild(bait);
+
+                            // Wait a bit for adblocker to act
+                            setTimeout(() => {
+                                const isBlocked = bait.offsetHeight === 0 ||
+                                    bait.offsetWidth === 0 ||
+                                    bait.offsetParent === null ||
+                                    window.getComputedStyle(bait).display === 'none' ||
+                                    window.getComputedStyle(bait).visibility === 'hidden';
+                                bait.remove();
+                                resolve(isBlocked);
+                            }, 100);
+                        });
+                    }
+
+                    // Load adblock monetization content
+                    async function loadAdblockMonetization() {
+                        try {
+                            const response = await fetch('{{ route('adblock.check') }}', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': window.csrfToken
+                                }
+                            });
+
+                            const data = await response.json();
+
+                            if (data.success && data.content) {
+                                const container = document.getElementById('adblock-monetization-container');
+                                if (container) {
+                                    container.innerHTML = data.content;
+                                    container.style.display = 'block';
+
+                                    // Execute any scripts in the content
+                                    const scripts = container.querySelectorAll('script');
+                                    scripts.forEach(script => {
+                                        const newScript = document.createElement('script');
+                                        if (script.src) {
+                                            newScript.src = script.src;
+                                        } else {
+                                            newScript.textContent = script.textContent;
+                                        }
+                                        document.head.appendChild(newScript);
+                                    });
+                                }
+                            }
+                        } catch (error) {
+                            console.log('Alternative monetization not available');
+                        }
+                    }
+
+                    // Run detection after page load
+                    window.addEventListener('load', async () => {
+                        // Small delay to ensure ad scripts have had time to load/block
+                        setTimeout(async () => {
+                            const adblockDetected = await detectAdblock();
+
+                            if (adblockDetected) {
+                                console.log('Adblock detected, loading alternative monetization');
+                                loadAdblockMonetization();
+                            }
+                        }, 1500);
+                    });
+                })();
+            </script>
+        @endif
     @endpush
 @endsection
