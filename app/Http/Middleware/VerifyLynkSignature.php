@@ -10,12 +10,27 @@ class VerifyLynkSignature
 {
     /**
      * Handle an incoming request.
-     * For now, allow all requests without signature verification.
-     * TODO: Implement proper signature verification based on Lynk documentation.
+     * Verifies the secret token from URL parameter.
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Skip signature verification - Lynk webhook doesn't require it
+        $expectedToken = config('services.lynk.webhook_token');
+
+        // Skip if token not configured
+        if (empty($expectedToken) || $expectedToken === 'your-lynk-signature-token') {
+            return $next($request);
+        }
+
+        // Check token from URL parameter
+        $token = $request->route('token');
+
+        if ($token !== $expectedToken) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid token',
+            ], 401);
+        }
+
         return $next($request);
     }
 }
