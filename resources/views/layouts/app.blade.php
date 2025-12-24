@@ -544,6 +544,9 @@
 
             <nav class="nav">
                 <a href="{{ route('home') }}">Home</a>
+                @guest
+                    <a href="{{ route('memberships.index') }}">Membership</a>
+                @endguest
 
                 @auth
                     @if (auth()->user()->isAdmin())
@@ -558,7 +561,8 @@
                     @if (!auth()->user()->hasActiveMembership())
                         <a href="{{ route('memberships.index') }}" class="btn btn-primary btn-sm">Member</a>
                     @else
-                        <span class="badge badge-success">Member</span>
+                        <a href="{{ route('memberships.index') }}" class="btn btn-primary btn-sm"><span
+                                class="badge badge-success">Member vistia</span></a>
                     @endif
 
                     <div class="user-menu">
@@ -569,6 +573,10 @@
                             </svg>
                         </div>
                         <div class="user-menu-dropdown">
+                            <div
+                                style="padding: 0.5rem 0.75rem; font-size: 0.875rem; color: var(--text-muted); border-bottom: 1px solid var(--border); margin-bottom: 0.25rem;">
+                                {{ auth()->user()->email }}
+                            </div>
                             @if (auth()->user()->isUploader())
                                 <a href="{{ route('uploader.payouts.index') }}">Saldo: Rp
                                     {{ number_format(auth()->user()->balance) }}</a>
