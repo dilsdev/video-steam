@@ -581,6 +581,7 @@
                                 <a href="{{ route('uploader.payouts.index') }}">Saldo: Rp
                                     {{ number_format(auth()->user()->balance) }}</a>
                             @endif
+                            <a href="{{ route('profile.edit') }}">Edit Profile</a>
                             <form action="{{ route('logout') }}" method="POST">
                                 @csrf
                                 <button type="submit"

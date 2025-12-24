@@ -40,7 +40,11 @@ Route::middleware('guest')->group(function () {
     });
 });
 
-Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
+    Route::get('/profile', [App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/profile/password', [App\Http\Controllers\ProfileController::class, 'updatePassword'])->name('profile.password.update');
+
+    Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
 
 // Streaming routes (rate limited)
 Route::middleware(['throttle:100,1'])->group(function () {
