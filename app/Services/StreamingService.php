@@ -85,6 +85,19 @@ class StreamingService
         ];
 
         return response()->stream(function () use ($path, $start, $length) {
+            // Disable timeout for long downloads
+            set_time_limit(0);
+            
+            // Close session to prevent locking other requests
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_write_close();
+            }
+
+            // Clean output buffer to prevent memory issues
+            if (ob_get_level()) {
+                ob_end_clean();
+            }
+
             $stream = fopen($path, 'rb');
 
             if ($stream === false) {
@@ -94,13 +107,12 @@ class StreamingService
             fseek($stream, $start);
 
             $remaining = $length;
-            $bufferSize = 1024 * 256; // 256KB chunks (Optimized for streaming)
-
+            $bufferSize = 1024 * 512; // Increased to 512KB for better throughput
+            
             while (! feof($stream) && $remaining > 0) {
                 // Check if connection is lost before reading
                 if (connection_aborted()) {
                     fclose($stream);
-
                     return;
                 }
 
@@ -112,7 +124,9 @@ class StreamingService
                 }
 
                 echo $data;
-                $remaining -= strlen($data); // Safe decrement
+                $remaining -= strlen($data);
+                
+                // Flush system output buffer
                 flush();
             }
 
