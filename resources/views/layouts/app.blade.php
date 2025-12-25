@@ -7,6 +7,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Video Platform') - {{ config('app.name') }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
+    <meta name="6a97888e-site-verification" content="0fc3a18159a25ac70fa8d201e142ec33">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="icon" type="image/svg+xml" href="{{ asset('icon-v.svg') }}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
