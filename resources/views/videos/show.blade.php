@@ -288,6 +288,18 @@
                                 </div>
                             </div>
 
+                            {{-- Video Slider Ad --}}
+                            <div
+                                style="display: flex; justify-content: center; background: rgba(30,41,59,0.3); border-radius: 12px; padding: 1rem; overflow: hidden;">
+                                <script async type="application/javascript" src="https://a.pemsrv.com/ad-provider.js"></script>
+                                <ins class="eas6a97888e35" data-zoneid="5812446"></ins>
+                                <script>
+                                    (AdProvider = window.AdProvider || []).push({
+                                        "serve": {}
+                                    });
+                                </script>
+                            </div>
+
                             {{-- Flex row: 300x250 ads side by side --}}
                             <div style="display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center;">
                                 <div style="background: rgba(30,41,59,0.3); border-radius: 12px; padding: 1rem;">
