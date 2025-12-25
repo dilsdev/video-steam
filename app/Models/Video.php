@@ -18,6 +18,7 @@ class Video extends Model
         'title',
         'description',
         'filename',
+        'external_url',
         'original_name',
         'thumbnail',
         'preview_filename',
@@ -101,6 +102,23 @@ class Video extends Model
     public function getWatchUrl(): string
     {
         return route('videos.show', $this->slug);
+    }
+
+    /**
+     * Get direct video URL (external or local stream)
+     * Returns external_url if set, otherwise null (use token-based streaming)
+     */
+    public function getDirectVideoUrl(): ?string
+    {
+        return $this->external_url ?: null;
+    }
+
+    /**
+     * Check if video uses external URL
+     */
+    public function hasExternalUrl(): bool
+    {
+        return ! empty($this->external_url);
     }
 
     public function isReady(): bool

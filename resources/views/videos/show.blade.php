@@ -576,9 +576,114 @@
                     `;
                 }
 
+                // Initialize Plyr player - works with or without token
+                function initPlyrPlayer(tokenData) {
+                    try {
+                        plyrInstance = new Plyr('#player', {
+                            controls: ['play-large', 'play', 'progress', 'current-time', 'duration', 'mute',
+                                'volume', 'captions', 'settings', 'pip', 'fullscreen'
+                            ],
+                            settings: ['quality', 'speed', 'loop'],
+                            ratio: '16:9',
+                            speed: {
+                                selected: 1,
+                                options: [0.5, 0.75, 1, 1.25, 1.5, 2]
+                            },
+                            seekTime: 10,
+                            keyboard: {
+                                focused: true,
+                                global: false
+                            }
+                        });
+
+                        const player = plyrInstance;
+
+                        player.on('ready', () => {
+                            if (videoLoading) videoLoading.style.display = 'none';
+                        });
+
+                        player.on('seeking', () => showLoading('Seeking...'));
+                        player.on('seeked', () => {
+                            if (videoLoading) videoLoading.style.display = 'none';
+                        });
+
+                        // Video error handling
+                        videoElement.addEventListener('error', function(e) {
+                            const error = videoElement.error;
+                            let message = 'Terjadi kesalahan saat memutar video.';
+                            if (error) {
+                                switch (error.code) {
+                                    case 1:
+                                        message = 'Video dibatalkan.';
+                                        break;
+                                    case 2:
+                                        message = 'Terjadi kesalahan jaringan.';
+                                        break;
+                                    case 3:
+                                        message = 'Video tidak dapat didecode.';
+                                        break;
+                                    case 4:
+                                        message = 'Format video tidak didukung.';
+                                        break;
+                                }
+                            }
+                            showError(message, true);
+                        });
+
+                        videoElement.addEventListener('waiting', () => showLoading('Buffering...'));
+                        videoElement.addEventListener('canplay', () => {
+                            if (videoLoading) videoLoading.style.display = 'none';
+                        });
+                        videoElement.addEventListener('playing', () => {
+                            if (videoLoading) videoLoading.style.display = 'none';
+                        });
+
+                        // Ad logic only if tokenData exists (token-based streaming)
+                        if (tokenData && !skipAds) {
+                            let adPlayed = false;
+                            let adWatchedConfirmed = false;
+
+                            player.on('play', async () => {
+                                if (!adPlayed && !skipAds) {
+                                    adPlayed = true;
+                                    player.pause();
+                                    // VAST ad logic would go here if needed
+                                    player.play();
+                                    return;
+                                }
+                                if (tokenData.token && !adWatchedConfirmed) {
+                                    adWatchedConfirmed = true;
+                                    confirmAdWatched(tokenData.token);
+                                }
+                            });
+                        }
+                    } catch (e) {
+                        console.error('Plyr failed', e);
+                        videoElement.controls = true;
+                        if (videoLoading) videoLoading.style.display = 'none';
+                    }
+                }
+
                 async function initPlayer(retryCount = 0) {
                     if (!videoElement) return;
 
+                    // Check if video has external URL (direct streaming)
+                    const externalUrl = @json($video->getDirectVideoUrl());
+
+                    if (externalUrl) {
+                        // Use external URL directly - bypass token-based streaming
+                        console.log('Using external URL:', externalUrl);
+                        const source = videoElement.querySelector('source');
+                        if (source) {
+                            source.src = externalUrl;
+                            videoElement.load();
+                        }
+                        if (videoLoading) videoLoading.style.display = 'none';
+                        initPlyrPlayer(null); // No token needed
+                        return;
+                    }
+
+                    // Fallback to token-based streaming (kept but not used when external_url is set)
                     if (retryCount > 0) {
                         showLoading(`Mencoba ulang... (${retryCount}/${MAX_RETRIES})`);
                     }
@@ -601,223 +706,8 @@
                         videoElement.load();
                     }
 
-                    // Add video error handling
-                    videoElement.addEventListener('error', function(e) {
-                        console.error('Video error:', e);
-                        const error = videoElement.error;
-                        let message = 'Terjadi kesalahan saat memutar video.';
-                        if (error) {
-                            switch (error.code) {
-                                case 1:
-                                    message = 'Video dibatalkan.';
-                                    break;
-                                case 2:
-                                    message = 'Terjadi kesalahan jaringan.';
-                                    break;
-                                case 3:
-                                    message = 'Video tidak dapat didecode.';
-                                    break;
-                                case 4:
-                                    message = 'Format video tidak didukung.';
-                                    break;
-                            }
-                        }
-                        showError(message, true);
-                    });
-
-                    // Add stalled/waiting handlers for better UX
-                    videoElement.addEventListener('waiting', function() {
-                        showLoading('Buffering...');
-                    });
-
-                    videoElement.addEventListener('canplay', function() {
-                        if (videoLoading) videoLoading.style.display = 'none';
-                    });
-
-                    videoElement.addEventListener('playing', function() {
-                        if (videoLoading) videoLoading.style.display = 'none';
-                    });
-
-                    // VAST Pre-roll Ad Logic
-                    const vastUrl = 'https://s.magsrv.com/v1/vast.php?idzone=5812386';
-                    let adPlayed = skipAds;
-
-                    async function playVastAd() {
-                        if (skipAds) return Promise.resolve();
-
-                        try {
-                            // Add timeout to prevent infinite hang
-                            const controller = new AbortController();
-                            const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-                            const response = await fetch(vastUrl, {
-                                signal: controller.signal
-                            });
-                            clearTimeout(timeoutId);
-
-                            const vastXml = await response.text();
-                            const parser = new DOMParser();
-                            const xmlDoc = parser.parseFromString(vastXml, 'text/xml');
-
-                            // Get media file from VAST
-                            const mediaFile = xmlDoc.querySelector('MediaFile');
-                            const clickThrough = xmlDoc.querySelector('ClickThrough');
-                            const impressions = xmlDoc.querySelectorAll('Impression');
-
-                            // If no MediaFile found, just resolve and continue to main video
-                            if (!mediaFile || !mediaFile.textContent.trim()) {
-                                console.log('No VAST ad available, skipping to main video');
-                                return Promise.resolve();
-                            }
-
-                            const adVideoUrl = mediaFile.textContent.trim();
-                            const adClickUrl = clickThrough ? clickThrough.textContent.trim() : null;
-
-                            // Track impressions
-                            impressions.forEach(imp => {
-                                const impUrl = imp.textContent.trim();
-                                if (impUrl) {
-                                    const img = new Image();
-                                    img.src = impUrl;
-                                }
-                            });
-
-                            return new Promise((resolve) => {
-                                const videoContainer = document.getElementById('video-container');
-                                if (!videoContainer) {
-                                    console.log('Video container not found, skipping ad');
-                                    resolve();
-                                    return;
-                                }
-
-                                // Create ad overlay
-                                const adOverlay = document.createElement('div');
-                                adOverlay.id = 'vast-ad-overlay';
-                                adOverlay.style.cssText =
-                                    'position:absolute;top:0;left:0;width:100%;height:100%;z-index:100;background:#000;';
-
-                                const adVideo = document.createElement('video');
-                                adVideo.src = adVideoUrl;
-                                adVideo.style.cssText =
-                                    'width:100%;height:100%;object-fit:contain;';
-                                adVideo.autoplay = true;
-                                adVideo.playsInline = true;
-                                adVideo.muted = false;
-
-                                // Skip button (appears after 5 seconds)
-                                const skipBtn = document.createElement('button');
-                                skipBtn.textContent = 'Skip Ad';
-                                skipBtn.style.cssText =
-                                    'position:absolute;bottom:20px;right:20px;background:rgba(0,0,0,0.8);color:white;border:1px solid white;padding:10px 20px;border-radius:4px;cursor:pointer;font-size:14px;display:none;z-index:101;';
-
-                                // Ad label
-                                const adLabel = document.createElement('div');
-                                adLabel.textContent = 'Iklan';
-                                adLabel.style.cssText =
-                                    'position:absolute;top:10px;left:10px;background:rgba(255,204,0,0.9);color:#000;padding:4px 12px;border-radius:4px;font-size:12px;font-weight:bold;z-index:101;';
-
-                                // Cleanup function
-                                function cleanup() {
-                                    if (adOverlay.parentNode) {
-                                        adOverlay.remove();
-                                    }
-                                    resolve();
-                                }
-
-                                // Click handler for ad
-                                if (adClickUrl) {
-                                    adVideo.style.cursor = 'pointer';
-                                    adVideo.addEventListener('click', () => {
-                                        window.open(adClickUrl, '_blank');
-                                    });
-                                }
-
-                                // Show skip button after 5 seconds
-                                setTimeout(() => {
-                                    skipBtn.style.display = 'block';
-                                }, 5000);
-
-                                // Fallback timeout - if ad takes too long, skip it
-                                setTimeout(() => {
-                                    console.log('Ad timeout, skipping');
-                                    cleanup();
-                                }, 30000);
-
-                                skipBtn.addEventListener('click', cleanup);
-                                adVideo.addEventListener('ended', cleanup);
-                                adVideo.addEventListener('error', () => {
-                                    console.log('Ad video error, skipping');
-                                    cleanup();
-                                });
-
-                                adOverlay.appendChild(adVideo);
-                                adOverlay.appendChild(skipBtn);
-                                adOverlay.appendChild(adLabel);
-                                videoContainer.appendChild(adOverlay);
-
-                                if (videoLoading) videoLoading.style.display = 'none';
-                            });
-                        } catch (e) {
-                            console.log('VAST ad error:', e);
-                            return Promise.resolve(); // Always resolve to allow main video to play
-                        }
-                    }
-
-                    try {
-                        plyrInstance = new Plyr('#player', {
-                            controls: ['play-large', 'play', 'progress', 'current-time', 'duration', 'mute',
-                                'volume', 'captions', 'settings', 'pip', 'fullscreen'
-                            ],
-                            settings: ['quality', 'speed', 'loop'],
-                            ratio: '16:9',
-                            speed: {
-                                selected: 1,
-                                options: [0.5, 0.75, 1, 1.25, 1.5, 2]
-                            },
-                            // Improve seeking performance
-                            seekTime: 10,
-                            keyboard: {
-                                focused: true,
-                                global: false
-                            }
-                        });
-
-                        // Store reference for cleanup
-                        const player = plyrInstance;
-
-                        player.on('ready', () => {
-                            if (videoLoading) videoLoading.style.display = 'none';
-                        });
-
-                        // Handle seeking - show loading during seek
-                        player.on('seeking', () => {
-                            showLoading('Seeking...');
-                        });
-
-                        player.on('seeked', () => {
-                            if (videoLoading) videoLoading.style.display = 'none';
-                        });
-
-                        // Trigger VAST ad on first play - fix infinite loop
-                        let adWatchedConfirmed = false;
-                        player.on('play', async () => {
-                            if (!adPlayed && !skipAds) {
-                                adPlayed = true; // Set immediately to prevent re-trigger
-                                player.pause();
-                                await playVastAd();
-                                player.play();
-                                return; // Exit early, next play will handle confirmAdWatched
-                            }
-                            if (!skipAds && tokenData.token && !adWatchedConfirmed) {
-                                adWatchedConfirmed = true;
-                                confirmAdWatched(tokenData.token);
-                            }
-                        });
-                    } catch (e) {
-                        console.error('Plyr failed', e);
-                        videoElement.controls = true;
-                        if (videoLoading) videoLoading.style.display = 'none';
-                    }
+                    // Initialize Plyr with token data
+                    initPlyrPlayer(tokenData);
                 }
                 initPlayer();
 
