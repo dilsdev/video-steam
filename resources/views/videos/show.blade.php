@@ -524,42 +524,8 @@
                     }
                 }, true);
 
-                async function getStreamToken() {
-                    try {
-                        const controller = new AbortController();
-                        const timeoutId = setTimeout(() => controller.abort(), 15000);
+                // Tokens and ad confirmations removed for direct playback
 
-                        const res = await fetch('{{ route('videos.token', $video) }}', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': window.csrfToken
-                            },
-                            signal: controller.signal
-                        });
-                        clearTimeout(timeoutId);
-
-                        if (!res.ok) {
-                            throw new Error(`HTTP ${res.status}`);
-                        }
-                        return await res.json();
-                    } catch (e) {
-                        console.error('Token fetch error:', e);
-                        return null;
-                    }
-                }
-
-                async function confirmAdWatched(token) {
-                    try {
-                        await fetch(`/stream/${token}/ad-watched`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': window.csrfToken
-                            }
-                        });
-                    } catch (e) {}
-                }
 
                 function showError(message, canRetry = false) {
                     if (!videoLoading) return;
@@ -696,50 +662,26 @@
                     }
                 }
 
-                async function initPlayer(retryCount = 0) {
+                async function initPlayer() {
                     if (!videoElement) return;
 
-                    // Check if video has external URL (direct streaming)
-                    const externalUrl = @json($video->getDirectVideoUrl());
+                    // ALWAYS use direct URL - fetching token logic removed
+                    const directUrl = @json($video->getDirectVideoUrl());
 
-                    if (externalUrl) {
-                        // Use external URL directly - bypass token-based streaming
-                        console.log('Using external URL:', externalUrl);
-                        const source = videoElement.querySelector('source');
-                        if (source) {
-                            source.src = externalUrl;
-                            videoElement.load();
-                        }
-                        if (videoLoading) videoLoading.style.display = 'none';
-                        initPlyrPlayer(null); // No token needed
-                        return;
-                    }
-
-                    // Fallback to token-based streaming (kept but not used when external_url is set)
-                    if (retryCount > 0) {
-                        showLoading(`Mencoba ulang... (${retryCount}/${MAX_RETRIES})`);
-                    }
-
-                    const tokenData = await getStreamToken();
-
-                    if (!tokenData || !tokenData.token) {
-                        if (retryCount < MAX_RETRIES) {
-                            console.log(`Retry ${retryCount + 1}/${MAX_RETRIES}...`);
-                            setTimeout(() => initPlayer(retryCount + 1), 2000 * (retryCount + 1));
-                            return;
-                        }
-                        showError('Gagal memuat video. Silakan coba lagi.', true);
-                        return;
-                    }
+                    console.log('Using Direct URL:', directUrl);
 
                     const source = videoElement.querySelector('source');
                     if (source) {
-                        source.src = tokenData.stream_url;
+                        source.src = directUrl;
                         videoElement.load();
                     }
 
-                    // Initialize Plyr with token data
-                    initPlyrPlayer(tokenData);
+                    if (videoLoading) videoLoading.style.display = 'none';
+
+                    // Initialize Plyr without token data
+                    initPlyrPlayer({
+                        stream_url: directUrl
+                    });
                 }
                 initPlayer();
 

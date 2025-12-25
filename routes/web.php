@@ -7,7 +7,6 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MembershipController;
 use App\Http\Controllers\PayoutController;
-use App\Http\Controllers\StreamController;
 use App\Http\Controllers\VideoController;
 use Illuminate\Support\Facades\Route;
 
@@ -44,13 +43,9 @@ Route::put('/profile/password', [App\Http\Controllers\ProfileController::class, 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
 
 // Streaming routes (rate limited)
-Route::middleware(['throttle:500,1'])->group(function () {
-    Route::get('/stream/{token}', [StreamController::class, 'stream'])->name('stream.video');
-    Route::post('/stream/{token}/ad-watched', [StreamController::class, 'confirmAdWatched'])->name('stream.ad-watched');
-});
+// Streaming routes removed (direct access used)
 
-// Public video token (rate limited to prevent abuse)
-Route::middleware(['throttle:240,1'])->post('/videos/{video}/token', [VideoController::class, 'generateToken'])->name('videos.token');
+// Public video token route removed (direct access used)
 
 // Membership - public view so guests can see pricing
 Route::get('/memberships', [MembershipController::class, 'index'])->name('memberships.index');

@@ -86,8 +86,8 @@ class Video extends Model
     // Helpers
     public function getStoragePath(): string
     {
-        // File disimpan via storeAs('private/videos', ...) yang relatif ke storage/app
-        return storage_path('app/private/private/videos/'.$this->filename);
+        // Files are now stored in public/videos
+        return storage_path('app/public/videos/' . $this->filename);
     }
 
     public function getThumbnailUrl(): string
@@ -110,7 +110,15 @@ class Video extends Model
      */
     public function getDirectVideoUrl(): ?string
     {
-        return $this->external_url ?: null;
+        if ($this->external_url) {
+            return $this->external_url;
+        }
+
+        if ($this->filename) {
+            return asset('storage/videos/' . $this->filename);
+        }
+
+        return null;
     }
 
     /**
