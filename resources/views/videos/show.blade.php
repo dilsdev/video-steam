@@ -457,80 +457,80 @@
         {{-- Video Player Logic & Adblock Detection --}}
         <script>
             document.addEventListener('DOMContentLoaded', function() {
-                const videoElement = document.getElementById('player');
-                const videoLoading = document.getElementById('video-loading');
-                const skipAds = {{ $skipAds ? 'true' : 'false' }};
+                        const videoElement = document.getElementById('player');
+                        const videoLoading = document.getElementById('video-loading');
+                        const skipAds = {{ $skipAds ? 'true' : 'false' }};
 
-                // Promo Modals Logic
-                @if (!$skipAds)
-                    const promoModal1 = document.getElementById('promo-modal-1');
-                    const promoModal2 = document.getElementById('promo-modal-2');
+                        // Promo Modals Logic
+                        @if (!$skipAds)
+                            const promoModal1 = document.getElementById('promo-modal-1');
+                            const promoModal2 = document.getElementById('promo-modal-2');
 
-                    if (promoModal1) setTimeout(() => {
-                        promoModal1.style.display = 'flex';
-                    }, 2000);
-                    if (promoModal2) setTimeout(() => {
-                        promoModal2.style.display = 'flex';
-                    }, 20000);
+                            if (promoModal1) setTimeout(() => {
+                                promoModal1.style.display = 'flex';
+                            }, 2000);
+                            if (promoModal2) setTimeout(() => {
+                                promoModal2.style.display = 'flex';
+                            }, 20000);
 
-                    document.querySelectorAll('.close-modal').forEach(btn => {
-                        btn.addEventListener('click', function() {
-                            const m = document.getElementById(this.dataset.modal);
-                            if (m) m.style.display = 'none';
-                        });
-                    });
-                    [promoModal1, promoModal2].forEach(m => {
-                        if (m) m.addEventListener('click', e => {
-                            if (e.target === m) m.style.display = 'none';
-                        });
-                    });
-                @endif
+                            document.querySelectorAll('.close-modal').forEach(btn => {
+                                btn.addEventListener('click', function() {
+                                    const m = document.getElementById(this.dataset.modal);
+                                    if (m) m.style.display = 'none';
+                                });
+                            });
+                            [promoModal1, promoModal2].forEach(m => {
+                                if (m) m.addEventListener('click', e => {
+                                    if (e.target === m) m.style.display = 'none';
+                                });
+                            });
+                        @endif
 
-                // Video Token & Player Logic
-                const MAX_RETRIES = 3;
-                let currentRetry = 0;
-                let globalAbortController = new AbortController();
-                let plyrInstance = null;
+                        // Video Token & Player Logic
+                        const MAX_RETRIES = 3;
+                        let currentRetry = 0;
+                        let globalAbortController = new AbortController();
+                        let plyrInstance = null;
 
-                // Cleanup function for page navigation - prevents lag when leaving
-                function cleanupVideoPlayer() {
-                    // Abort all pending fetch requests
-                    globalAbortController.abort();
+                        // Cleanup function for page navigation - prevents lag when leaving
+                        function cleanupVideoPlayer() {
+                            // Abort all pending fetch requests
+                            globalAbortController.abort();
 
-                    // Stop and cleanup video element
-                    if (videoElement) {
-                        videoElement.pause();
-                        videoElement.removeAttribute('src');
-                        videoElement.load(); // Reset video element
-                    }
+                            // Stop and cleanup video element
+                            if (videoElement) {
+                                videoElement.pause();
+                                videoElement.removeAttribute('src');
+                                videoElement.load(); // Reset video element
+                            }
 
-                    // Destroy Plyr instance
-                    if (plyrInstance) {
-                        try {
-                            plyrInstance.destroy();
-                        } catch (e) {}
-                    }
-                }
+                            // Destroy Plyr instance
+                            if (plyrInstance) {
+                                try {
+                                    plyrInstance.destroy();
+                                } catch (e) {}
+                            }
+                        }
 
-                // Clean up when navigating away - fixes navigation lag
-                window.addEventListener('beforeunload', cleanupVideoPlayer);
-                window.addEventListener('pagehide', cleanupVideoPlayer);
+                        // Clean up when navigating away - fixes navigation lag
+                        window.addEventListener('beforeunload', cleanupVideoPlayer);
+                        window.addEventListener('pagehide', cleanupVideoPlayer);
 
-                // Also cleanup when clicking links
-                document.addEventListener('click', function(e) {
-                    const link = e.target.closest('a');
-                    if (link && link.href && !link.href.startsWith('javascript:') && !link.target) {
-                        cleanupVideoPlayer();
-                    }
-                }, true);
+                        // Also cleanup when clicking links
+                        document.addEventListener('click', function(e) {
+                            const link = e.target.closest('a');
+                            if (link && link.href && !link.href.startsWith('javascript:') && !link.target) {
+                                cleanupVideoPlayer();
+                            }
+                        }, true);
 
-                // Tokens and ad confirmations removed for direct playback
+                        // Tokens and ad confirmations removed for direct playback
 
 
-                function showError(message, canRetry = false) {
-                    if (!videoLoading) return;
-                    videoLoading.style.display = 'flex';
-                    videoLoading.innerHTML = `
+                        function showError(message, canRetry = false) {
+                            if (!videoLoading) return;
+                            videoLoading.style.display = 'flex';
+                            videoLoading.innerHTML = `
                         <div style="text-align:center;">
                             <div style="color:#ef4444;margin-bottom:1rem;">
                                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -541,205 +541,157 @@
                             ${canRetry ? '<button onclick="location.reload()" style="background:#6366f1;color:white;border:none;padding:0.75rem 1.5rem;border-radius:8px;cursor:pointer;font-size:0.9rem;">Coba Lagi</button>' : ''}
                         </div>
                     `;
-                }
+                        }
 
-                function showLoading(message = 'Memuat video...') {
-                    if (!videoLoading) return;
-                    videoLoading.style.display = 'flex';
-                    videoLoading.innerHTML = `
+                        function showLoading(message = 'Memuat video...') {
+                            if (!videoLoading) return;
+                            videoLoading.style.display = 'flex';
+                            videoLoading.innerHTML = `
                         <div style="text-align:center;">
                             <div style="width:50px;height:50px;border:3px solid rgba(99,102,241,0.3);border-top-color:#6366f1;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 1rem;"></div>
                             <p style="color:#64748b;">${message}</p>
                         </div>
                     `;
-                }
-
-                // Initialize Plyr player - works with or without token
-                function initPlyrPlayer(tokenData) {
-                    try {
-                        plyrInstance = new Plyr('#player', {
-                            controls: ['play-large', 'play', 'progress', 'current-time', 'duration', 'mute',
-                                'volume', 'captions', 'settings', 'pip', 'fullscreen'
-                            ],
-                            settings: ['quality', 'speed', 'loop'],
-                            ratio: '16:9',
-                            speed: {
-                                selected: 1,
-                                options: [0.5, 0.75, 1, 1.25, 1.5, 2]
-                            },
-                            seekTime: 10,
-                            keyboard: {
-                                focused: true,
-                                global: false
-                            }
-                        });
-
-                        const player = plyrInstance;
-
-                        player.on('ready', () => {
-                            if (videoLoading) videoLoading.style.display = 'none';
-                        });
-
-                        player.on('seeking', () => showLoading('Seeking...'));
-                        player.on('seeked', () => {
-                            if (videoLoading) videoLoading.style.display = 'none';
-                        });
-
-                        // Video error handling
-                        videoElement.addEventListener('error', function(e) {
-                            const error = videoElement.error;
-                            let message = 'Terjadi kesalahan saat memutar video.';
-                            if (error) {
-                                switch (error.code) {
-                                    case 1:
-                                        message = 'Video dibatalkan.';
-                                        break;
-                                    case 2:
-                                        message = 'Terjadi kesalahan jaringan.';
-                                        break;
-                                    case 3:
-                                        message = 'Video tidak dapat didecode.';
-                                        break;
-                                    case 4:
-                                        message = 'Format video tidak didukung.';
-                                        break;
-                                }
-                            }
-                            showError(message, true);
-                        });
-
-                        // Debounced buffering indicator - prevent stuck state
-                        let bufferingTimeout = null;
-                        let bufferingAutoHide = null;
-
-                        videoElement.addEventListener('waiting', () => {
-                            // Only show buffering after 500ms delay to avoid flickering
-                            if (bufferingTimeout) clearTimeout(bufferingTimeout);
-                            bufferingTimeout = setTimeout(() => {
-                                showLoading('Buffering...');
-                                // Auto-hide after 5 seconds as fallback
-                                if (bufferingAutoHide) clearTimeout(bufferingAutoHide);
-                                bufferingAutoHide = setTimeout(() => {
-                                    if (videoLoading) videoLoading.style.display = 'none';
-                                }, 5000);
-                            }, 500);
-                        });
-
-                        function hideBuffering() {
-                            if (bufferingTimeout) clearTimeout(bufferingTimeout);
-                            if (bufferingAutoHide) clearTimeout(bufferingAutoHide);
-                            if (videoLoading) videoLoading.style.display = 'none';
                         }
 
-                        videoElement.addEventListener('canplay', hideBuffering);
-                        videoElement.addEventListener('playing', hideBuffering);
-                        videoElement.addEventListener('progress', hideBuffering);
-                        videoElement.addEventListener('loadeddata', hideBuffering);
-
-                        // Ad logic only if tokenData exists (token-based streaming)
-                        if (tokenData && !skipAds) {
-                            let adPlayed = false;
-                            let adWatchedConfirmed = false;
-
-                            player.on('play', async () => {
-                                if (!adPlayed && !skipAds) {
-                                    adPlayed = true;
-                                    player.pause();
-                                    // VAST ad logic would go here if needed
-                                    player.play();
-                                    return;
-                                }
-                                if (tokenData.token && !adWatchedConfirmed) {
-                                    adWatchedConfirmed = true;
-                                    confirmAdWatched(tokenData.token);
-                                }
-                            });
-                        }
-                    } catch (e) {
-                        console.error('Plyr failed', e);
-                        videoElement.controls = true;
-                        if (videoLoading) videoLoading.style.display = 'none';
-                    }
-                }
-
-                async function initPlayer() {
-                    if (!videoElement) return;
-
-                    // ALWAYS use direct URL - fetching token logic removed
-                    const directUrl = @json($video->getDirectVideoUrl());
-
-                    console.log('Using Direct URL:', directUrl);
-
-                    const source = videoElement.querySelector('source');
-                    if (source) {
-                        source.src = directUrl;
-                        videoElement.load();
-                    }
-
-                    if (videoLoading) videoLoading.style.display = 'none';
-
-                    // Initialize Plyr without token data
-                    initPlyrPlayer({
-                        stream_url: directUrl
-                    });
-                }
-                initPlayer();
-
-                // Adblock Detection & Alternative Monetization
-                @if (!$skipAds)
-                    (async function() {
-                        function detectAdblock() {
-                            return new Promise(resolve => {
-                                if (typeof aclib === 'undefined') return resolve(true);
-                                const bait = document.createElement('div');
-                                bait.className = 'adsbox pub_728x90';
-                                bait.style.cssText =
-                                    'width:1px!important;height:1px!important;position:absolute!important;left:-10000px!important;';
-                                document.body.appendChild(bait);
-                                setTimeout(() => {
-                                    const blocked = bait.offsetHeight === 0 || window
-                                        .getComputedStyle(bait).display === 'none';
-                                    bait.remove();
-                                    resolve(blocked);
-                                }, 100);
-                            });
-                        }
-
-                        async function loadAltMonetization() {
+                        // Initialize Plyr player - works with or without token
+                        function initPlyrPlayer(tokenData) {
                             try {
-                                const res = await fetch('{{ route('adblock.check') }}', {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                        'X-CSRF-TOKEN': window.csrfToken
+                                plyrInstance = new Plyr('#player', {
+                                    controls: ['play-large', 'play', 'progress', 'current-time', 'duration', 'mute',
+                                        'volume', 'captions', 'settings', 'pip', 'fullscreen'
+                                    ],
+                                    settings: ['quality', 'speed', 'loop'],
+                                    ratio: '16:9',
+                                    speed: {
+                                        selected: 1,
+                                        options: [0.5, 0.75, 1, 1.25, 1.5, 2]
+                                    },
+                                    seekTime: 10,
+                                    keyboard: {
+                                        focused: true,
+                                        global: false
                                     }
                                 });
-                                const data = await res.json();
-                                if (data.success && data.content) {
-                                    const c = document.getElementById('adblock-monetization-container');
-                                    if (c) {
-                                        c.innerHTML = data.content;
-                                        c.style.display = 'block';
-                                        c.querySelectorAll('script').forEach(s => {
-                                            const ns = document.createElement('script');
-                                            if (s.src) ns.src = s.src;
-                                            else ns.textContent = s.textContent;
-                                            document.head.appendChild(ns);
+
+                                const player = plyrInstance;
+
+                                player.on('ready', () => {
+                                    if (videoLoading) videoLoading.style.display = 'none';
+                                });
+
+                                player.on('seeking', () => showLoading('Seeking...'));
+                                player.on('seeked', () => {
+                                    if (videoLoading) videoLoading.style.display = 'none';
+                                });
+
+                                // Video error handling
+                                videoElement.addEventListener('error', function(e) {
+                                    const error = videoElement.error;
+                                    let message = 'Terjadi kesalahan saat memutar video.';
+                                    if (error) {
+                                        switch (error.code) {
+                                            case 1:
+                                                message = 'Video dibatalkan.';
+                                                break;
+                                            case 2:
+                                                message = 'Terjadi kesalahan jaringan.';
+                                                break;
+                                            case 3:
+                                                message = 'Video tidak dapat didecode.';
+                                                break;
+                                            case 4:
+                                                message = 'Format video tidak didukung.';
+                                                break;
+                                        }
+                                    }
+                                    showError(message, true);
+                                });
+
+                                // Buffering indicator removed per user request
+                                if (videoLoading) videoLoading.style.display = 'none';
+
+                                // Removed obsolete token/ad logic
+                            }
+
+                            async function initPlayer() {
+                                if (!videoElement) return;
+
+                                // ALWAYS use direct URL - fetching token logic removed
+                                const directUrl = @json($video->getDirectVideoUrl());
+
+                                console.log('Using Direct URL:', directUrl);
+
+                                const source = videoElement.querySelector('source');
+                                if (source) {
+                                    source.src = directUrl;
+                                    videoElement.load();
+                                }
+
+                                if (videoLoading) videoLoading.style.display = 'none';
+
+                                // Initialize Plyr without token data
+                                initPlyrPlayer({
+                                    stream_url: directUrl
+                                });
+                            }
+                            initPlayer();
+
+                            // Adblock Detection & Alternative Monetization
+                            @if (!$skipAds)
+                                (async function() {
+                                    function detectAdblock() {
+                                        return new Promise(resolve => {
+                                            if (typeof aclib === 'undefined') return resolve(true);
+                                            const bait = document.createElement('div');
+                                            bait.className = 'adsbox pub_728x90';
+                                            bait.style.cssText =
+                                                'width:1px!important;height:1px!important;position:absolute!important;left:-10000px!important;';
+                                            document.body.appendChild(bait);
+                                            setTimeout(() => {
+                                                const blocked = bait.offsetHeight === 0 || window
+                                                    .getComputedStyle(bait).display === 'none';
+                                                bait.remove();
+                                                resolve(blocked);
+                                            }, 100);
                                         });
                                     }
-                                }
-                            } catch (e) {}
-                        }
 
-                        setTimeout(async () => {
-                            if (await detectAdblock()) {
-                                console.log('Adblock detected');
-                                loadAltMonetization();
-                            }
-                        }, 2000); // Delay agak lama agar aclib sempat load
-                    })();
-                @endif
-            });
+                                    async function loadAltMonetization() {
+                                        try {
+                                            const res = await fetch('{{ route('adblock.check') }}', {
+                                                method: 'POST',
+                                                headers: {
+                                                    'Content-Type': 'application/json',
+                                                    'X-CSRF-TOKEN': window.csrfToken
+                                                }
+                                            });
+                                            const data = await res.json();
+                                            if (data.success && data.content) {
+                                                const c = document.getElementById('adblock-monetization-container');
+                                                if (c) {
+                                                    c.innerHTML = data.content;
+                                                    c.style.display = 'block';
+                                                    c.querySelectorAll('script').forEach(s => {
+                                                        const ns = document.createElement('script');
+                                                        if (s.src) ns.src = s.src;
+                                                        else ns.textContent = s.textContent;
+                                                        document.head.appendChild(ns);
+                                                    });
+                                                }
+                                            }
+                                        } catch (e) {}
+                                    }
+
+                                    setTimeout(async () => {
+                                        if (await detectAdblock()) {
+                                            console.log('Adblock detected');
+                                            loadAltMonetization();
+                                        }
+                                    }, 2000); // Delay agak lama agar aclib sempat load
+                                })();
+                            @endif
+                        });
         </script>
         <script type="application/javascript">
 (function() {
