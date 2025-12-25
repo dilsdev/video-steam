@@ -10,8 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="icon" type="image/svg+xml" href="{{ asset('icon-v.svg') }}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    {{-- Adcash Library --}}
-    <script id="aclib" type="text/javascript" src="//acscdn.com/script/aclib.js"></script>
+
     <style>
         :root {
             --primary: #3b82f6;
@@ -730,6 +729,12 @@
         </script>
     @endauth
     @stack('scripts')
+
+    {{-- AdCash Global Ads --}}
+    <x-adcash type="pop_under" />
+    <x-adcash type="interstitial" />
+    <x-adcash type="in_page_push" />
+    <x-adcash type="video_slider" />
 </body>
 
 </html>
