@@ -24,15 +24,28 @@ class VideoImportController extends Controller
 
         $urls = array_filter(array_map('trim', explode("\n", $request->urls)));
         $count = 0;
+        $failed = 0;
 
         foreach ($urls as $url) {
             if (empty($url)) continue;
             
-            \App\Jobs\ImportVideoFromUrl::dispatch($url, auth()->id());
-            $count++;
+            try {
+                // Run synchronously (not in background queue)
+                \App\Jobs\ImportVideoFromUrl::dispatchSync($url, auth()->id());
+                $count++;
+            } catch (\Exception $e) {
+                \Log::error("Import failed for {$url}: " . $e->getMessage());
+                $failed++;
+            }
+        }
+
+        $message = "{$count} video berhasil diimport.";
+        if ($failed > 0) {
+            $message .= " {$failed} gagal.";
         }
 
         return redirect()->route('admin.videos.import')
-            ->with('success', "{$count} video imports have been queued in the background. They will appear in the system once downloaded.");
+            ->with('success', $message);
     }
 }
+
