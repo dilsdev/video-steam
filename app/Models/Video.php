@@ -115,7 +115,9 @@ class Video extends Model
         }
 
         if ($this->filename) {
-            return asset('storage/videos/' . $this->filename);
+            // Use streaming route to ensure Range Request support (seek/skip) matches
+            // direct file access might fail ranges on simple dev servers
+            return route('videos.stream.public', $this->slug);
         }
 
         return null;

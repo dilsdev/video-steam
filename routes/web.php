@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Route;
 // Public routes
 Route::get('/', [VideoController::class, 'index'])->name('home');
 Route::get('/v/{video:slug}', [VideoController::class, 'show'])->name('videos.show');
+Route::get('/stream/public/{video:slug}', [StreamController::class, 'streamPublic'])->name('videos.stream.public');
 
 // Adblock monetization routes
 Route::get('/adblock-content', [AdblockMonetizationController::class, 'getAdblockContent'])->name('adblock.content');

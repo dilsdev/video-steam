@@ -64,4 +64,23 @@ class StreamController extends Controller
 
         return response()->json(['success' => true]);
     }
+
+    /**
+     * Public stream video without token (direct access with Range support)
+     */
+    public function streamPublic(Request $request, Video $video)
+    {
+        // Ensure file exists
+        if (! file_exists($video->getStoragePath())) {
+            abort(404);
+        }
+
+        // Record view (optional, logic same as before)
+        $this->streamingService->recordView($video, $request);
+
+        // Use PHP streaming fallback which handles Range Requests perfectly
+        // We force PHP streaming here because 'php artisan serve' might fail with static files
+        // and we want exact control over "chunked" delivery
+        return $this->streamingService->streamVideo($video, $request);
+    }
 }
