@@ -6,43 +6,9 @@
     @push('styles')
         <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
         <style>
-            /* Fix container iklan agar tidak collapse (meningkatkan pendapatan) */
-            /* Fix container iklan agar rapi & center */
-            .ad-banner-container {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                width: 100%;
-                margin: 1.5rem 0;
-                overflow: hidden;
-                /* Hapus background agar terlihat clean */
-                background: transparent;
-            }
-
-            .ad-sidebar-container {
-                min-height: 600px;
-                width: 160px;
-                /* Center sidebar ad */
-                margin: 0 auto;
-                display: flex;
-                justify-content: center;
-            }
-
-            /* RESPONSIVE FIX: Gunakan minmax(0, 1fr) agar konten tidak meluber dari grid */
+            /* Video page styles */
             .video-content-wrapper {
-                display: grid;
-                grid-template-columns: minmax(0, 1fr) 180px;
-                gap: 1.5rem;
-            }
-
-            @media (max-width: 1024px) {
-                .video-content-wrapper {
-                    grid-template-columns: 1fr !important;
-                }
-
-                .ad-sidebar {
-                    display: none !important;
-                }
+                display: block;
             }
 
             @media (max-width: 768px) {
@@ -180,12 +146,6 @@
                     </video>
                 </div>
 
-                {{-- Banner Ad 728x90 (Top) --}}
-                @if (!$skipAds)
-                    <div class="ad-banner-container">
-                        <x-adcash type="banner_728x90" />
-                    </div>
-                @endif
 
                 <div class="video-info" style="padding: 1.5rem 0;">
                     <h1 style="font-size: 1.5rem; margin-bottom: 0.5rem;">{{ $video->title }}</h1>
@@ -223,39 +183,10 @@
                     @endif
                 </div>
 
-                {{-- Native Ad --}}
-                @if (!$skipAds)
-                    <div
-                        style="margin: 2rem 0; padding: 1.5rem 0; border-top: 1px solid rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.05);">
-                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
-                            <span
-                                style="font-size: 0.75rem; color: #94a3b8; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em;">Sponsored
-                                Content</span>
-                        </div>
-                        <x-adcash type="native" />
-                    </div>
-                @endif
 
-                {{-- Member CTA --}}
-                @if (!$skipAds)
-                    <div class="card"
-                        style="background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(14,165,233,0.15)); text-align: center; margin-top: 1.5rem; border: 1px solid rgba(99,102,241,0.3);">
-                        <div style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem;">😤 Capek Iklan?</div>
-                        <p style="margin-bottom: 1rem; color: #94a3b8;"><strong style="color: #10b981;">Rp20.000</strong> =
-                            1 Bulan Nonton Tanpa Iklan</p>
-                        <a href="{{ route('memberships.index') }}" class="btn btn-primary">Daftar Sekarang</a>
-                    </div>
-                @endif
             </div>
 
-            {{-- Sidebar Banner 160x600 --}}
-            @if (!$skipAds)
-                <div class="ad-sidebar" style="position: sticky; top: 100px; height: fit-content;">
-                    <div class="ad-sidebar-container">
-                        <x-adcash type="banner_160x600" />
-                    </div>
-                </div>
-            @endif
+
         </div>
 
         {{-- Video Lainnya --}}
@@ -489,6 +420,12 @@
                         }, 2000); // Delay agak lama agar aclib sempat load
                     })();
                 @endif
+            });
+        </script>
+        <script id="aclib" type="text/javascript" src="//acscdn.com/script/aclib.js"></script>
+        <script type="text/javascript">
+            aclib.runAutoTag({
+                zoneId: 'igfjjlmgoi',
             });
         </script>
     @endpush
