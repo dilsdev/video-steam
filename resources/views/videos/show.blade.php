@@ -526,7 +526,15 @@
                         if (skipAds) return Promise.resolve();
 
                         try {
-                            const response = await fetch(vastUrl);
+                            // Add timeout to prevent infinite hang
+                            const controller = new AbortController();
+                            const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+                            const response = await fetch(vastUrl, {
+                                signal: controller.signal
+                            });
+                            clearTimeout(timeoutId);
+
                             const vastXml = await response.text();
                             const parser = new DOMParser();
                             const xmlDoc = parser.parseFromString(vastXml, 'text/xml');
@@ -536,88 +544,103 @@
                             const clickThrough = xmlDoc.querySelector('ClickThrough');
                             const impressions = xmlDoc.querySelectorAll('Impression');
 
-                            if (mediaFile && mediaFile.textContent.trim()) {
-                                const adVideoUrl = mediaFile.textContent.trim();
-                                const adClickUrl = clickThrough ? clickThrough.textContent.trim() : null;
-
-                                // Track impressions
-                                impressions.forEach(imp => {
-                                    const impUrl = imp.textContent.trim();
-                                    if (impUrl) {
-                                        const img = new Image();
-                                        img.src = impUrl;
-                                    }
-                                });
-
-                                return new Promise((resolve) => {
-                                    // Create ad overlay
-                                    const adOverlay = document.createElement('div');
-                                    adOverlay.id = 'vast-ad-overlay';
-                                    adOverlay.style.cssText =
-                                        'position:absolute;top:0;left:0;width:100%;height:100%;z-index:100;background:#000;';
-
-                                    const adVideo = document.createElement('video');
-                                    adVideo.src = adVideoUrl;
-                                    adVideo.style.cssText =
-                                        'width:100%;height:100%;object-fit:contain;';
-                                    adVideo.autoplay = true;
-                                    adVideo.playsInline = true;
-
-                                    // Skip button (appears after 5 seconds)
-                                    const skipBtn = document.createElement('button');
-                                    skipBtn.textContent = 'Skip Ad';
-                                    skipBtn.style.cssText =
-                                        'position:absolute;bottom:20px;right:20px;background:rgba(0,0,0,0.8);color:white;border:1px solid white;padding:10px 20px;border-radius:4px;cursor:pointer;font-size:14px;display:none;z-index:101;';
-
-                                    // Ad label
-                                    const adLabel = document.createElement('div');
-                                    adLabel.textContent = 'Iklan';
-                                    adLabel.style.cssText =
-                                        'position:absolute;top:10px;left:10px;background:rgba(255,204,0,0.9);color:#000;padding:4px 12px;border-radius:4px;font-size:12px;font-weight:bold;z-index:101;';
-
-                                    // Click handler for ad
-                                    if (adClickUrl) {
-                                        adVideo.style.cursor = 'pointer';
-                                        adVideo.addEventListener('click', () => {
-                                            window.open(adClickUrl, '_blank');
-                                        });
-                                    }
-
-                                    // Show skip button after 5 seconds
-                                    setTimeout(() => {
-                                        skipBtn.style.display = 'block';
-                                    }, 5000);
-
-                                    skipBtn.addEventListener('click', () => {
-                                        adOverlay.remove();
-                                        adPlayed = true;
-                                        resolve();
-                                    });
-
-                                    adVideo.addEventListener('ended', () => {
-                                        adOverlay.remove();
-                                        adPlayed = true;
-                                        resolve();
-                                    });
-
-                                    adVideo.addEventListener('error', () => {
-                                        adOverlay.remove();
-                                        adPlayed = true;
-                                        resolve();
-                                    });
-
-                                    adOverlay.appendChild(adVideo);
-                                    adOverlay.appendChild(skipBtn);
-                                    adOverlay.appendChild(adLabel);
-                                    document.getElementById('video-container').appendChild(adOverlay);
-
-                                    if (videoLoading) videoLoading.style.display = 'none';
-                                });
+                            // If no MediaFile found, just resolve and continue to main video
+                            if (!mediaFile || !mediaFile.textContent.trim()) {
+                                console.log('No VAST ad available, skipping to main video');
+                                return Promise.resolve();
                             }
+
+                            const adVideoUrl = mediaFile.textContent.trim();
+                            const adClickUrl = clickThrough ? clickThrough.textContent.trim() : null;
+
+                            // Track impressions
+                            impressions.forEach(imp => {
+                                const impUrl = imp.textContent.trim();
+                                if (impUrl) {
+                                    const img = new Image();
+                                    img.src = impUrl;
+                                }
+                            });
+
+                            return new Promise((resolve) => {
+                                const videoContainer = document.getElementById('video-container');
+                                if (!videoContainer) {
+                                    console.log('Video container not found, skipping ad');
+                                    resolve();
+                                    return;
+                                }
+
+                                // Create ad overlay
+                                const adOverlay = document.createElement('div');
+                                adOverlay.id = 'vast-ad-overlay';
+                                adOverlay.style.cssText =
+                                    'position:absolute;top:0;left:0;width:100%;height:100%;z-index:100;background:#000;';
+
+                                const adVideo = document.createElement('video');
+                                adVideo.src = adVideoUrl;
+                                adVideo.style.cssText =
+                                    'width:100%;height:100%;object-fit:contain;';
+                                adVideo.autoplay = true;
+                                adVideo.playsInline = true;
+                                adVideo.muted = false;
+
+                                // Skip button (appears after 5 seconds)
+                                const skipBtn = document.createElement('button');
+                                skipBtn.textContent = 'Skip Ad';
+                                skipBtn.style.cssText =
+                                    'position:absolute;bottom:20px;right:20px;background:rgba(0,0,0,0.8);color:white;border:1px solid white;padding:10px 20px;border-radius:4px;cursor:pointer;font-size:14px;display:none;z-index:101;';
+
+                                // Ad label
+                                const adLabel = document.createElement('div');
+                                adLabel.textContent = 'Iklan';
+                                adLabel.style.cssText =
+                                    'position:absolute;top:10px;left:10px;background:rgba(255,204,0,0.9);color:#000;padding:4px 12px;border-radius:4px;font-size:12px;font-weight:bold;z-index:101;';
+
+                                // Cleanup function
+                                function cleanup() {
+                                    if (adOverlay.parentNode) {
+                                        adOverlay.remove();
+                                    }
+                                    resolve();
+                                }
+
+                                // Click handler for ad
+                                if (adClickUrl) {
+                                    adVideo.style.cursor = 'pointer';
+                                    adVideo.addEventListener('click', () => {
+                                        window.open(adClickUrl, '_blank');
+                                    });
+                                }
+
+                                // Show skip button after 5 seconds
+                                setTimeout(() => {
+                                    skipBtn.style.display = 'block';
+                                }, 5000);
+
+                                // Fallback timeout - if ad takes too long, skip it
+                                setTimeout(() => {
+                                    console.log('Ad timeout, skipping');
+                                    cleanup();
+                                }, 30000);
+
+                                skipBtn.addEventListener('click', cleanup);
+                                adVideo.addEventListener('ended', cleanup);
+                                adVideo.addEventListener('error', () => {
+                                    console.log('Ad video error, skipping');
+                                    cleanup();
+                                });
+
+                                adOverlay.appendChild(adVideo);
+                                adOverlay.appendChild(skipBtn);
+                                adOverlay.appendChild(adLabel);
+                                videoContainer.appendChild(adOverlay);
+
+                                if (videoLoading) videoLoading.style.display = 'none';
+                            });
                         } catch (e) {
                             console.log('VAST ad error:', e);
+                            return Promise.resolve(); // Always resolve to allow main video to play
                         }
-                        return Promise.resolve();
                     }
 
                     try {
