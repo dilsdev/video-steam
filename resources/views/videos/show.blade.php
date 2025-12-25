@@ -7,23 +7,25 @@
         <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
         <style>
             /* Fix container iklan agar tidak collapse (meningkatkan pendapatan) */
+            /* Fix container iklan agar rapi & center */
             .ad-banner-container {
                 display: flex;
                 justify-content: center;
                 align-items: center;
                 width: 100%;
-                min-height: 90px;
-                /* Penting: mencegah layout shift & mendeteksi visibilitas */
-                background: rgba(0, 0, 0, 0.1);
                 margin: 1.5rem 0;
-                border-radius: 8px;
                 overflow: hidden;
+                /* Hapus background agar terlihat clean */
+                background: transparent;
             }
 
             .ad-sidebar-container {
                 min-height: 600px;
                 width: 160px;
-                background: rgba(0, 0, 0, 0.1);
+                /* Center sidebar ad */
+                margin: 0 auto;
+                display: flex;
+                justify-content: center;
             }
 
             /* RESPONSIVE FIX: Gunakan minmax(0, 1fr) agar konten tidak meluber dari grid */
@@ -223,10 +225,12 @@
 
                 {{-- Native Ad --}}
                 @if (!$skipAds)
-                    <div style="margin: 1.5rem 0;">
-                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+                    <div
+                        style="margin: 2rem 0; padding: 1.5rem 0; border-top: 1px solid rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
                             <span
-                                style="font-size: 0.7rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">Sponsored</span>
+                                style="font-size: 0.75rem; color: #94a3b8; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em;">Sponsored
+                                Content</span>
                         </div>
                         <x-adcash type="native" />
                     </div>
