@@ -44,7 +44,7 @@ Route::put('/profile/password', [App\Http\Controllers\ProfileController::class, 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
 
 // Streaming routes (rate limited)
-Route::middleware(['throttle:100,1'])->group(function () {
+Route::middleware(['throttle:500,1'])->group(function () {
     Route::get('/stream/{token}', [StreamController::class, 'stream'])->name('stream.video');
     Route::post('/stream/{token}/ad-watched', [StreamController::class, 'confirmAdWatched'])->name('stream.ad-watched');
 });
