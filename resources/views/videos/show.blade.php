@@ -229,7 +229,8 @@
                                 <p style="color: #64748b;">Memuat video...</p>
                             </div>
                         </div>
-                        <video id="player" playsinline controls poster="{{ $video->getThumbnailUrl() }}">
+                        <video id="player" playsinline controls preload="metadata"
+                            poster="{{ $video->getThumbnailUrl() }}">
                             <source src="" type="{{ $video->mime_type }}" />
                         </video>
                     </div>
@@ -474,18 +475,64 @@
                 @endif
 
                 // Video Token & Player Logic
+                const MAX_RETRIES = 3;
+                let currentRetry = 0;
+                let globalAbortController = new AbortController();
+                let plyrInstance = null;
+
+                // Cleanup function for page navigation - prevents lag when leaving
+                function cleanupVideoPlayer() {
+                    // Abort all pending fetch requests
+                    globalAbortController.abort();
+
+                    // Stop and cleanup video element
+                    if (videoElement) {
+                        videoElement.pause();
+                        videoElement.removeAttribute('src');
+                        videoElement.load(); // Reset video element
+                    }
+
+                    // Destroy Plyr instance
+                    if (plyrInstance) {
+                        try {
+                            plyrInstance.destroy();
+                        } catch (e) {}
+                    }
+                }
+
+                // Clean up when navigating away - fixes navigation lag
+                window.addEventListener('beforeunload', cleanupVideoPlayer);
+                window.addEventListener('pagehide', cleanupVideoPlayer);
+
+                // Also cleanup when clicking links
+                document.addEventListener('click', function(e) {
+                    const link = e.target.closest('a');
+                    if (link && link.href && !link.href.startsWith('javascript:') && !link.target) {
+                        cleanupVideoPlayer();
+                    }
+                }, true);
+
                 async function getStreamToken() {
                     try {
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), 15000);
+
                         const res = await fetch('{{ route('videos.token', $video) }}', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
                                 'X-CSRF-TOKEN': window.csrfToken
-                            }
+                            },
+                            signal: controller.signal
                         });
+                        clearTimeout(timeoutId);
+
+                        if (!res.ok) {
+                            throw new Error(`HTTP ${res.status}`);
+                        }
                         return await res.json();
                     } catch (e) {
-                        console.error(e);
+                        console.error('Token fetch error:', e);
                         return null;
                     }
                 }
@@ -502,13 +549,49 @@
                     } catch (e) {}
                 }
 
-                async function initPlayer() {
+                function showError(message, canRetry = false) {
+                    if (!videoLoading) return;
+                    videoLoading.style.display = 'flex';
+                    videoLoading.innerHTML = `
+                        <div style="text-align:center;">
+                            <div style="color:#ef4444;margin-bottom:1rem;">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                                </svg>
+                            </div>
+                            <p style="color:#ef4444;font-size:1rem;margin-bottom:0.5rem;">${message}</p>
+                            ${canRetry ? '<button onclick="location.reload()" style="background:#6366f1;color:white;border:none;padding:0.75rem 1.5rem;border-radius:8px;cursor:pointer;font-size:0.9rem;">Coba Lagi</button>' : ''}
+                        </div>
+                    `;
+                }
+
+                function showLoading(message = 'Memuat video...') {
+                    if (!videoLoading) return;
+                    videoLoading.style.display = 'flex';
+                    videoLoading.innerHTML = `
+                        <div style="text-align:center;">
+                            <div style="width:50px;height:50px;border:3px solid rgba(99,102,241,0.3);border-top-color:#6366f1;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 1rem;"></div>
+                            <p style="color:#64748b;">${message}</p>
+                        </div>
+                    `;
+                }
+
+                async function initPlayer(retryCount = 0) {
                     if (!videoElement) return;
+
+                    if (retryCount > 0) {
+                        showLoading(`Mencoba ulang... (${retryCount}/${MAX_RETRIES})`);
+                    }
+
                     const tokenData = await getStreamToken();
 
                     if (!tokenData || !tokenData.token) {
-                        if (videoLoading) videoLoading.innerHTML =
-                            '<div style="text-align:center;color:#ef4444;"><p>Gagal memuat video</p></div>';
+                        if (retryCount < MAX_RETRIES) {
+                            console.log(`Retry ${retryCount + 1}/${MAX_RETRIES}...`);
+                            setTimeout(() => initPlayer(retryCount + 1), 2000 * (retryCount + 1));
+                            return;
+                        }
+                        showError('Gagal memuat video. Silakan coba lagi.', true);
                         return;
                     }
 
@@ -517,6 +600,43 @@
                         source.src = tokenData.stream_url;
                         videoElement.load();
                     }
+
+                    // Add video error handling
+                    videoElement.addEventListener('error', function(e) {
+                        console.error('Video error:', e);
+                        const error = videoElement.error;
+                        let message = 'Terjadi kesalahan saat memutar video.';
+                        if (error) {
+                            switch (error.code) {
+                                case 1:
+                                    message = 'Video dibatalkan.';
+                                    break;
+                                case 2:
+                                    message = 'Terjadi kesalahan jaringan.';
+                                    break;
+                                case 3:
+                                    message = 'Video tidak dapat didecode.';
+                                    break;
+                                case 4:
+                                    message = 'Format video tidak didukung.';
+                                    break;
+                            }
+                        }
+                        showError(message, true);
+                    });
+
+                    // Add stalled/waiting handlers for better UX
+                    videoElement.addEventListener('waiting', function() {
+                        showLoading('Buffering...');
+                    });
+
+                    videoElement.addEventListener('canplay', function() {
+                        if (videoLoading) videoLoading.style.display = 'none';
+                    });
+
+                    videoElement.addEventListener('playing', function() {
+                        if (videoLoading) videoLoading.style.display = 'none';
+                    });
 
                     // VAST Pre-roll Ad Logic
                     const vastUrl = 'https://s.magsrv.com/v1/vast.php?idzone=5812386';
@@ -644,7 +764,7 @@
                     }
 
                     try {
-                        const player = new Plyr('#player', {
+                        plyrInstance = new Plyr('#player', {
                             controls: ['play-large', 'play', 'progress', 'current-time', 'duration', 'mute',
                                 'volume', 'captions', 'settings', 'pip', 'fullscreen'
                             ],
@@ -653,9 +773,28 @@
                             speed: {
                                 selected: 1,
                                 options: [0.5, 0.75, 1, 1.25, 1.5, 2]
+                            },
+                            // Improve seeking performance
+                            seekTime: 10,
+                            keyboard: {
+                                focused: true,
+                                global: false
                             }
                         });
+
+                        // Store reference for cleanup
+                        const player = plyrInstance;
+
                         player.on('ready', () => {
+                            if (videoLoading) videoLoading.style.display = 'none';
+                        });
+
+                        // Handle seeking - show loading during seek
+                        player.on('seeking', () => {
+                            showLoading('Seeking...');
+                        });
+
+                        player.on('seeked', () => {
                             if (videoLoading) videoLoading.style.display = 'none';
                         });
 

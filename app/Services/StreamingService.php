@@ -107,7 +107,15 @@ class StreamingService
             fseek($stream, $start);
 
             $remaining = $length;
-            $bufferSize = 1024 * 512; // Increased to 512KB for better throughput
+
+            // Dynamic buffer size based on remaining content
+            // Larger buffer for big files = smoother streaming
+            $bufferSize = 1024 * 512; // Default 512KB
+            if ($length > 10 * 1024 * 1024) { // > 10MB
+                $bufferSize = 1024 * 1024; // 1MB for large videos
+            } elseif ($length > 50 * 1024 * 1024) { // > 50MB
+                $bufferSize = 2 * 1024 * 1024; // 2MB for very large videos
+            }
 
             while (! feof($stream) && $remaining > 0) {
                 // Check if connection is lost before reading

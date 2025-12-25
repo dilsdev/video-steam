@@ -48,8 +48,22 @@ class VideoToken extends Model
 
     public function isValid(?string $ip = null, ?string $sessionId = null): bool
     {
-        // Only validate that the token has not expired.
-        return $this->expires_at->isFuture();
+        // Check if token has expired
+        if (!$this->expires_at->isFuture()) {
+            return false;
+        }
+
+        // Log IP mismatch for security monitoring (non-blocking)
+        if ($ip && $this->ip_address && $this->ip_address !== $ip) {
+            \Illuminate\Support\Facades\Log::warning('VideoToken IP mismatch', [
+                'token' => substr($this->token, 0, 8) . '...',
+                'video_id' => $this->video_id,
+                'expected_ip' => $this->ip_address,
+                'actual_ip' => $ip,
+            ]);
+        }
+
+        return true;
     }
 
     public function markAdWatched(): void
