@@ -169,4 +169,120 @@ class StreamingService
 
         return true;
     }
+
+    /**
+     * Stream video using Nginx X-Accel-Redirect (production)
+     * Falls back to PHP streaming if Nginx is not configured
+     */
+    public function streamVideoNginx(Video $video, Request $request)
+    {
+        if (!config('streaming.use_nginx', false)) {
+            // Fallback to PHP streaming in development
+            return $this->streamVideo($video, $request);
+        }
+
+        $filename = $video->filename;
+        $mimeType = $video->mime_type ?: 'video/mp4';
+
+        return response('', 200, [
+            'X-Accel-Redirect' => config('streaming.nginx_videos_path') . $filename,
+            'Content-Type' => $mimeType,
+            'Content-Disposition' => 'inline',
+            'Accept-Ranges' => 'bytes',
+            'Cache-Control' => 'private, max-age=2592000',
+        ]);
+    }
+
+    /**
+     * Stream preview video (10 seconds)
+     */
+    public function streamPreview(Video $video, Request $request)
+    {
+        if (!$video->hasPreview()) {
+            abort(404, 'Preview not available');
+        }
+
+        if (config('streaming.use_nginx', false)) {
+            // Use Nginx for preview streaming
+            return response('', 200, [
+                'X-Accel-Redirect' => config('streaming.nginx_previews_path') . $video->preview_filename,
+                'Content-Type' => 'video/mp4',
+                'Content-Disposition' => 'inline',
+                'Accept-Ranges' => 'bytes',
+                'Cache-Control' => 'public, max-age=86400',
+            ]);
+        }
+
+        // Fallback: PHP streaming for preview
+        $path = $video->getPreviewPath();
+        $fileSize = filesize($path);
+
+        $start = 0;
+        $end = $fileSize - 1;
+        $length = $fileSize;
+        $statusCode = 200;
+
+        // Handle Range Request
+        if ($request->hasHeader('Range')) {
+            $range = $request->header('Range');
+
+            if (preg_match('/bytes=(\d+)-(\d*)/', $range, $matches)) {
+                $start = intval($matches[1]);
+                $end = isset($matches[2]) && $matches[2] !== ''
+                    ? intval($matches[2])
+                    : $fileSize - 1;
+
+                if ($start > $end || $start >= $fileSize) {
+                    abort(416, 'Requested Range Not Satisfiable');
+                }
+
+                $length = $end - $start + 1;
+                $statusCode = 206;
+            }
+        }
+
+        $headers = [
+            'Content-Type' => 'video/mp4',
+            'Content-Length' => $length,
+            'Accept-Ranges' => 'bytes',
+            'Content-Range' => "bytes {$start}-{$end}/{$fileSize}",
+            'Cache-Control' => 'public, max-age=86400',
+        ];
+
+        return response()->stream(function () use ($path, $start, $length) {
+            set_time_limit(0);
+            
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_write_close();
+            }
+
+            if (ob_get_level()) {
+                ob_end_clean();
+            }
+
+            $stream = fopen($path, 'rb');
+            if ($stream === false) return;
+
+            fseek($stream, $start);
+            $remaining = $length;
+            $bufferSize = 1024 * 512;
+
+            while (!feof($stream) && $remaining > 0) {
+                if (connection_aborted()) {
+                    fclose($stream);
+                    return;
+                }
+
+                $data = fread($stream, min($bufferSize, $remaining));
+                if ($data === false) break;
+
+                echo $data;
+                $remaining -= strlen($data);
+                flush();
+            }
+
+            fclose($stream);
+        }, $statusCode, $headers);
+    }
 }
+

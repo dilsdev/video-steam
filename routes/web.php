@@ -24,6 +24,11 @@ Route::get('/videos/{video:slug}/preview', [VideoController::class, 'preview'])
     ->name('videos.preview')
     ->middleware('throttle:120,1');
 
+// Preview stream - 10 detik pertama untuk guest/non-member
+Route::get('/videos/{video:slug}/preview-stream', [VideoController::class, 'streamPreview'])
+    ->name('videos.preview-stream')
+    ->middleware('throttle:120,1');
+
 // Adblock monetization routes
 Route::get('/adblock-content', [AdblockMonetizationController::class, 'getAdblockContent'])->name('adblock.content');
 Route::post('/adblock-check', [AdblockMonetizationController::class, 'checkAndServe'])->name('adblock.check');
@@ -40,11 +45,11 @@ Route::middleware('guest')->group(function () {
     });
 });
 
-    Route::get('/profile', [App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
-    Route::put('/profile/password', [App\Http\Controllers\ProfileController::class, 'updatePassword'])->name('profile.password.update');
+Route::get('/profile', [App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');
+Route::patch('/profile', [App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
+Route::put('/profile/password', [App\Http\Controllers\ProfileController::class, 'updatePassword'])->name('profile.password.update');
 
-    Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
 
 // Streaming routes (rate limited)
 Route::middleware(['throttle:100,1'])->group(function () {

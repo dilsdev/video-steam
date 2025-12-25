@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\GenerateVideoThumbnail;
 use App\Models\AdConfig;
 use App\Models\Video;
 use App\Services\StreamingService;
@@ -94,10 +95,13 @@ class VideoController extends Controller
             // Auto-generated thumbnail from JavaScript (base64)
             $this->saveBase64Thumbnail($video, $request->auto_thumbnail);
         }
-        // Jika tidak ada thumbnail, getThumbnailUrl() akan return default-thumbnail.svg
+        // Jika tidak ada manual/auto thumbnail, dispatch FFmpeg job untuk generate thumbnail otomatis
+        if (!$video->thumbnail) {
+            GenerateVideoThumbnail::dispatch($video);
+        }
 
         return redirect()->route('videos.show', $video)
-            ->with('success', 'Video berhasil diupload!');
+            ->with('success', 'Video berhasil diupload!' . (!$video->thumbnail ? ' Thumbnail sedang di-generate.' : ''));
     }
 
     /**
@@ -199,6 +203,32 @@ class VideoController extends Controller
             'Cache-Control' => 'public, max-age=31536000, immutable',
             'Accept-Ranges' => 'bytes',
         ]);
+    }
+
+    /**
+     * Stream preview video (10 detik pertama) untuk guest/non-member
+     */
+    public function streamPreview(Video $video, Request $request)
+    {
+        if (!$video->isReady()) {
+            abort(404);
+        }
+
+        // Check if video is public
+        if (!$video->is_public) {
+            $user = auth()->user();
+            if (!$user || ($user->id !== $video->user_id && !$user->isAdmin())) {
+                abort(403);
+            }
+        }
+
+        // Check if preview exists
+        if (!$video->hasPreview()) {
+            // Fallback: return error or try to generate on the fly
+            abort(404, 'Preview not available. Please wait while it is being generated.');
+        }
+
+        return $this->streamingService->streamPreview($video, $request);
     }
 
     /**

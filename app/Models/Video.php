@@ -20,6 +20,7 @@ class Video extends Model
         'filename',
         'original_name',
         'thumbnail',
+        'preview_filename',
         'mime_type',
         'file_size',
         'duration',
@@ -112,6 +113,30 @@ class Video extends Model
     public function hasFile(): bool
     {
         return file_exists($this->getStoragePath());
+    }
+
+    /**
+     * Get path to preview file
+     */
+    public function getPreviewPath(): string
+    {
+        if ($this->preview_filename) {
+            return storage_path('app/private/previews/'.$this->preview_filename);
+        }
+
+        return '';
+    }
+
+    /**
+     * Check if video has preview
+     */
+    public function hasPreview(): bool
+    {
+        if (! $this->preview_filename) {
+            return false;
+        }
+
+        return file_exists($this->getPreviewPath());
     }
 
     public function getFormattedSize(): string

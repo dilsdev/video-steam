@@ -45,8 +45,8 @@ class StreamController extends Controller
         // Catat view (hanya sekali per session)
         $this->streamingService->recordView($video, $request);
 
-        // Stream video dengan Range support
-        return $this->streamingService->streamVideo($video, $request);
+        // Stream video dengan Nginx (atau fallback PHP)
+        return $this->streamingService->streamVideoNginx($video, $request);
     }
 
     /**
