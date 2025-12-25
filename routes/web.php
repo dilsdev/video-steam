@@ -20,14 +20,6 @@ use Illuminate\Support\Facades\Route;
 // Public routes
 Route::get('/', [VideoController::class, 'index'])->name('home');
 Route::get('/v/{video:slug}', [VideoController::class, 'show'])->name('videos.show');
-Route::get('/videos/{video:slug}/preview', [VideoController::class, 'preview'])
-    ->name('videos.preview')
-    ->middleware('throttle:120,1');
-
-// Preview stream - 10 detik pertama untuk guest/non-member
-Route::get('/videos/{video:slug}/preview-stream', [VideoController::class, 'streamPreview'])
-    ->name('videos.preview-stream')
-    ->middleware('throttle:120,1');
 
 // Adblock monetization routes
 Route::get('/adblock-content', [AdblockMonetizationController::class, 'getAdblockContent'])->name('adblock.content');

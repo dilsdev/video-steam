@@ -206,32 +206,6 @@ class VideoController extends Controller
     }
 
     /**
-     * Stream preview video (10 detik pertama) untuk guest/non-member
-     */
-    public function streamPreview(Video $video, Request $request)
-    {
-        if (!$video->isReady()) {
-            abort(404);
-        }
-
-        // Check if video is public
-        if (!$video->is_public) {
-            $user = auth()->user();
-            if (!$user || ($user->id !== $video->user_id && !$user->isAdmin())) {
-                abort(403);
-            }
-        }
-
-        // Check if preview exists
-        if (!$video->hasPreview()) {
-            // Fallback: return error or try to generate on the fly
-            abort(404, 'Preview not available. Please wait while it is being generated.');
-        }
-
-        return $this->streamingService->streamPreview($video, $request);
-    }
-
-    /**
      * Halaman tonton video
      * URL: domain.com/v/{slug}
      */
