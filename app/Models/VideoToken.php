@@ -6,9 +6,14 @@ use Illuminate\Database\Eloquent\Model;
 
 class VideoToken extends Model
 {
+    protected $guarded = [];
+
     public $incrementing = false;
+
     protected $primaryKey = 'token';
+
     protected $keyType = 'string';
+
     public $timestamps = false;
 
     protected $fillable = [
@@ -41,11 +46,10 @@ class VideoToken extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function isValid(string $ip, string $sessionId): bool
+    public function isValid(?string $ip = null, ?string $sessionId = null): bool
     {
-        return $this->expires_at->isFuture() &&
-               $this->ip_address === $ip &&
-               $this->session_id === $sessionId;
+        // Only validate that the token has not expired.
+        return $this->expires_at->isFuture();
     }
 
     public function markAdWatched(): void

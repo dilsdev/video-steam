@@ -27,8 +27,8 @@ class StreamController extends Controller
             abort(403, 'Invalid token');
         }
 
-        if (! $videoToken->isValid($request->ip(), $request->session()->getId())) {
-            SecurityLog::log('expired_token', $request->ip(), $videoToken->user_id, 'Token expired or IP/session mismatch');
+        if (! $videoToken->isValid()) {
+            SecurityLog::log('expired_token', $request->ip(), $videoToken->user_id, 'Token expired');
             abort(403, 'Token expired or invalid');
         }
 

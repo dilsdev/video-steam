@@ -31,7 +31,7 @@ class StreamingService
             'ip_address' => $request->ip(),
             'session_id' => $request->session()->getId(),
             'ad_watched' => false,
-            'expires_at' => now()->addMinutes(30),
+            'expires_at' => now()->addHours(2),
             'created_at' => now(),
         ]);
 
@@ -87,7 +87,7 @@ class StreamingService
         return response()->stream(function () use ($path, $start, $length) {
             // Disable timeout for long downloads
             set_time_limit(0);
-            
+
             // Close session to prevent locking other requests
             if (session_status() === PHP_SESSION_ACTIVE) {
                 session_write_close();
@@ -108,11 +108,12 @@ class StreamingService
 
             $remaining = $length;
             $bufferSize = 1024 * 512; // Increased to 512KB for better throughput
-            
+
             while (! feof($stream) && $remaining > 0) {
                 // Check if connection is lost before reading
                 if (connection_aborted()) {
                     fclose($stream);
+
                     return;
                 }
 
@@ -125,7 +126,7 @@ class StreamingService
 
                 echo $data;
                 $remaining -= strlen($data);
-                
+
                 // Flush system output buffer
                 flush();
             }
@@ -176,7 +177,7 @@ class StreamingService
      */
     public function streamVideoNginx(Video $video, Request $request)
     {
-        if (!config('streaming.use_nginx', false)) {
+        if (! config('streaming.use_nginx', false)) {
             // Fallback to PHP streaming in development
             return $this->streamVideo($video, $request);
         }
@@ -185,7 +186,7 @@ class StreamingService
         $mimeType = $video->mime_type ?: 'video/mp4';
 
         return response('', 200, [
-            'X-Accel-Redirect' => config('streaming.nginx_videos_path') . $filename,
+            'X-Accel-Redirect' => config('streaming.nginx_videos_path').$filename,
             'Content-Type' => $mimeType,
             'Content-Disposition' => 'inline',
             'Accept-Ranges' => 'bytes',
