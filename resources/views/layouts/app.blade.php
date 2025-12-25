@@ -730,11 +730,6 @@
     @endauth
     @stack('scripts')
 
-    {{-- AdCash Global Ads --}}
-    <x-adcash type="pop_under" />
-    <x-adcash type="interstitial" />
-    <x-adcash type="in_page_push" />
-    <x-adcash type="video_slider" />
 </body>
 
 </html>
