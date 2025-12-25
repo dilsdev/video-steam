@@ -6,6 +6,7 @@
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
         <h1>Admin Dashboard</h1>
         <div style="display: flex; gap: 0.5rem;">
+            <a href="{{ route('admin.generate-links') }}" class="btn btn-primary">🔗 Generate Links</a>
             <a href="{{ route('admin.videos.import') }}" class="btn btn-primary">📥 Import Video</a>
             <a href="{{ route('admin.settings.index') }}" class="btn btn-secondary">⚙️ Pengaturan</a>
         </div>

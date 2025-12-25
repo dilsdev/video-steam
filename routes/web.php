@@ -97,4 +97,8 @@ Route::middleware(['auth', \App\Http\Middleware\CheckAdmin::class])
         // Video Import
         Route::get('/videos/import', [\App\Http\Controllers\Admin\VideoImportController::class, 'create'])->name('videos.import');
         Route::post('/videos/import', [\App\Http\Controllers\Admin\VideoImportController::class, 'store'])->name('videos.import.store');
+
+        // Video Link Generator
+        Route::get('/generate-links', [AdminDashboardController::class, 'generateVideoLinks'])->name('generate-links');
+        Route::get('/reset-links', [AdminDashboardController::class, 'resetSharedLinks'])->name('reset-links');
     });

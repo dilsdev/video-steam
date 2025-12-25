@@ -54,4 +54,69 @@ class AdminDashboardController extends Controller
 
         return view('admin.dashboard', compact('stats', 'recentPayouts', 'recentUsers', 'recentVideos', 'earningsChart'));
     }
+
+    /**
+     * Generate random video links for sharing
+     */
+    public function generateVideoLinks()
+    {
+        // Get all ready video IDs
+        $allVideoIds = Video::where('status', 'ready')
+            ->where('is_public', true)
+            ->pluck('id')
+            ->toArray();
+
+        // Get already shared video IDs from session
+        $sharedVideoIds = session('shared_video_ids', []);
+
+        // Get videos that haven't been shared yet
+        $availableVideoIds = array_diff($allVideoIds, $sharedVideoIds);
+
+        // If all videos have been shared, reset
+        if (empty($availableVideoIds)) {
+            $sharedVideoIds = [];
+            $availableVideoIds = $allVideoIds;
+            session(['shared_video_ids' => []]);
+        }
+
+        // Randomly pick up to 5 videos
+        $pickCount = min(5, count($availableVideoIds));
+        $randomKeys = array_rand(array_flip($availableVideoIds), $pickCount);
+        
+        // Ensure it's always an array
+        if (!is_array($randomKeys)) {
+            $randomKeys = [$randomKeys];
+        }
+
+        // Get the videos
+        $videos = Video::whereIn('id', $randomKeys)->get();
+
+        // Update session with newly shared videos
+        $newSharedIds = array_merge($sharedVideoIds, $randomKeys);
+        session(['shared_video_ids' => $newSharedIds]);
+
+        // Generate formatted links
+        $baseUrl = config('app.url');
+        $links = [];
+        $i = 1;
+        foreach ($videos as $video) {
+            $links[] = $i . '. ' . $baseUrl . '/v/' . $video->slug;
+            $i++;
+        }
+
+        $linksText = implode("\n", $links);
+        $remainingCount = count($allVideoIds) - count($newSharedIds);
+        $totalCount = count($allVideoIds);
+
+        return view('admin.link-generator', compact('linksText', 'remainingCount', 'totalCount', 'videos'));
+    }
+
+    /**
+     * Reset shared video links session
+     */
+    public function resetSharedLinks()
+    {
+        session()->forget('shared_video_ids');
+        return redirect()->route('admin.generate-links')->with('success', 'Link sharing history telah direset.');
+    }
 }
